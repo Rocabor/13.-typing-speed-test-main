@@ -15,5 +15,147 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet" />
   </head>
-  <body></body>
+  <body>
+    <main class="main">
+      <!-- CABECERA: LOGO Y RECORD PERSONAL // HOME - NOT STARTED -->
+
+      <header class="header">
+        <picture>
+          <source media="(min-width:760px)" srcset="assets/images/logo-large.svg" />
+          <img src="assets/images/logo-small.svg" alt="Typing Test Logo" class="logo" />
+        </picture>
+
+        <div class="personal-best-text-cont">
+          <div class="personal-best">
+            <img src="assets/images/icon-personal-best.svg" alt="Ícono de trofeo" aria-hidden="true" />
+            <span class="pb-label">Personal best:</span>
+            <span id="pb-score" class="pb-value" aria-live="polite">-- WPM</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="main-content" >
+        <!-- MAIN CONTENT > STATS CONTAINER // HOME - NOT STARTED -->
+
+        <section class="stats-container" aria-label="Estadísticas en tiempo real">
+          <div class="stats-row">
+            <div class="stat-item wpm-cont">
+              <span class="stat-label">WPM:</span>
+              <strong class="stat-value" id="wpm" aria-live="polite">---</strong>
+            </div>
+            <div class="stat-item acc-cont">
+              <span class="stat-label">Accuracy:</span>
+              <strong class="stat-value" id="accuracy" aria-live="polite">---%</strong>
+            </div>
+            <div class="stat-item time-cont">
+              <span class="stat-label">Time:</span>
+              <strong class="stat-value" id="time" aria-live="polite">-:--</strong>
+            </div>
+          </div>
+
+          <!-- MAIN CONTENT > STATS CONTAINER > BTN-MENU DROPDOWN // HOME - NOT STARTED -->
+
+          <div class="setting-cont-movil" aria-label="Configuración del test">
+            <div class="dropdown-group">
+              <button type="button" class="btn-setting" aria-haspopup="listbox" aria-expanded="false" id="difficulty-mobile-btn">
+                <span class="btn-text">Difficulty</span>
+                <img src="assets/images/icon-down-arrow.svg" alt="Desplegar opciones de dificultad" aria-hidden="true" class="arrow" />
+              </button>
+
+              <div class="dropdown-difficulty" role="listbox" aria-labelledby="difficulty-mobile-btn">
+                <div class="select active" role="option" tabindex="0" aria-selected="true" data-value="Easy">
+                  <div class="circle" role="radio"></div>
+                  <span class="label">Easy</span>
+                </div>
+
+                <div class="select line" role="option" tabindex="0" aria-selected="false" data-value="Medium">
+                  <div class="circle"></div>
+                  <span class="label">Medium</span>
+                </div>
+
+                <div class="select line" role="option" tabindex="0" aria-selected="false" data-value="Hard">
+                  <div class="circle"></div>
+                  <span class="label">Hard</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="dropdown-group">
+              <button type="button" class="btn-setting" aria-haspopup="listbox" aria-expanded="false" id="mode-mobile-btn">
+                <span class="btn-text">Mode</span>
+                <img src="assets/images/icon-down-arrow.svg" alt="Desplegar opciones de modo" aria-hidden="true" class="arrow" />
+              </button>
+
+              <div class="dropdown-mode" role="listbox" aria-labelledby="mode-mobile-btn">
+                <div class="select active" role="option" tabindex="0" aria-selected="false" data-value="Timed (60s)">
+                  <div class="circle"></div>
+                  <span class="label">Timed (60s)</span>
+                </div>
+
+                <div class="select line" role="option" tabindex="0" aria-selected="false" data-value="Passage">
+                  <div class="circle"></div>
+                  <span class="label">Passage</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- MAIN CONTENT > TEXT CONTAINER // HOME - NOT STARTED -->
+
+        <section class="text-container" aria-label="Área de escritura">
+          <div class="text-row" id="typing-area">
+            <div class="text-box" id="text-input" tabindex="0" role="textbox" aria-label="Texto para practicar mecanografía" aria-multiline="true"></div>
+
+            <div class="test-controls">
+              <button type="button" class="btn-start" id="start-btn">Start Typing Test</button>
+              <span class="hint">Or click the text and start typing</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- MAIN CONTENT > TEXT CONTAINER // HOME - STARTED -->
+
+        <div class="btn-restart-cont">
+          <button type="button" class="btn-restart" id="restart-btn">Restart Test <img src="assets/images/icon-restart.svg" alt="" /></button>
+        </div>
+      </div>
+
+      <!-- MAIN CONTENT // RESULTS  -->
+
+      <section class="test-complete" aria-labelledby="test-complete-title" role="region">
+        <img id="complete-icon" class="complete-icon" src="assets/images/icon-completed.svg" alt="" aria-hidden="true" />
+
+        <div class="message-cont">
+          <h1 class="message">Test Complete!</h1>
+          <p class="message">Solid run. Keep pushing to beat your high score.</p>
+        </div>
+
+        <div class="stats-row-complete">
+          <div class="wpm-cont" role="status">
+            <span class="label">WPM:</span>
+            <strong class="wpm-value" id="wpm-complete" aria-live="polite">---</strong>
+          </div>
+
+          <div class="accuracy-cont" role="status">
+            <span class="label">Accuracy:</span>
+            <strong class="accuracy-value" id="accuracy-complete" aria-live="polite">---%</strong>
+          </div>
+
+          <div class="characters-cont" role="status">
+            <span class="label">Characters</span>
+            <span class="characters-values">
+              <strong class="value-correct" id="Correct" aria-live="polite">---</strong> /
+              <strong class="value-incorrect" id="Incorrect" aria-live="polite">---</strong>
+            </span>
+          </div>
+        </div>
+
+        <button type="button" class="btn-go-again" id="go-again-btn" aria-label="Restart test">
+          Go Again
+          <img src="assets/images/icon-restart.svg" alt="" aria-hidden="true" />
+        </button>
+      </section>
+    </main>
+  </body>
 </html>
