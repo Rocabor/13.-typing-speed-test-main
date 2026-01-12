@@ -139,8 +139,8 @@ body {
 
 .dropdown-difficulty,
 .dropdown-mode {
-  /* display: none; */
-  display: flex;
+  display: none;
+  /* display: flex; */
   flex-direction: column;
   padding-block: 10px;
   gap: 8px;
@@ -179,8 +179,8 @@ body {
 
 .select.active .circle::after {
   content: "";
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background-color: var(--neutral-900);
 }
@@ -242,8 +242,8 @@ body {
 .btn-restart-cont {
   width: 100%;
   height: 80px;
-  /* display: none; */
-  display: flex;
+  display: none;
+  /* display: flex; */
   justify-content: center;
   align-items: end;
   border-top: 1px solid var(--neutral-700);
@@ -270,8 +270,8 @@ body {
 .test-complete {
   width: 343px;
   height: 609px;
-  /* display: none; */
-  display: flex;
+  display: none;
+  /* display: flex; */
   flex-direction: column;
   align-items: center;
   gap: 24px;

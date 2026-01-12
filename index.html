@@ -29,12 +29,12 @@
           <div class="personal-best">
             <img src="assets/images/icon-personal-best.svg" alt="Ícono de trofeo" aria-hidden="true" />
             <span class="pb-label">Personal best:</span>
-            <span id="pb-score" class="pb-value" aria-live="polite">-- WPM</span>
+            <span id="pb-score" class="pb-value" aria-live="polite"></span>
           </div>
         </div>
       </header>
 
-      <div class="main-content" >
+      <div class="main-content">
         <!-- MAIN CONTENT > STATS CONTAINER // HOME - NOT STARTED -->
 
         <section class="stats-container" aria-label="Estadísticas en tiempo real">
@@ -88,6 +88,11 @@
 
               <div class="dropdown-mode" role="listbox" aria-labelledby="mode-mobile-btn">
                 <div class="select active" role="option" tabindex="0" aria-selected="false" data-value="Timed (60s)">
+                  <div class="circle"></div>
+                  <span class="label">Timed (30s)</span>
+                </div>
+
+                <div class="select line" role="option" tabindex="0" aria-selected="false" data-value="Timed (60s)">
                   <div class="circle"></div>
                   <span class="label">Timed (60s)</span>
                 </div>
