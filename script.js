@@ -89,35 +89,45 @@ function setupDropdowns() {
   });
 }
 
-// Opciones de dificultad
-difficultyOptions.forEach((option) => {
-  option.addEventListener("click", () => {
-    const value = option.getAttribute("data-value").toLowerCase();
-    currentDifficulty = value;
-    console.log(value);
+// control de dificultad y modo de tiempo
+function setupDropdown(options, button, dropdown, updateCallback) {
+    options.forEach((option) => {
+        option.addEventListener("click", () => {
+            const value = option.getAttribute("data-value");
+            
+            // Actualizar selección visual (Clases y ARIA)
+            options.forEach(opt => {
+                opt.classList.remove("active");
+                opt.setAttribute("aria-selected", "false");
+            });
+            option.classList.add("active");
+            option.setAttribute("aria-selected", "true");
 
-    // Actualizar selección visual
-    difficultyOptions.forEach((opt) => {
-      opt.classList.remove("active");
-      opt.setAttribute("aria-selected", "false");
+            // Actualizar UI del botón y cerrar dropdown
+            button.querySelector(".btn-text").textContent = value;
+            button.setAttribute("aria-expanded", "false");
+            button.querySelector(".arrow").style.transform = "rotate(0deg)";
+            dropdown.style.display = "none";
+
+            // Ejecutar lógica específica
+            updateCallback(value.toLowerCase());
+        });
     });
-    option.classList.add("active");
-    option.setAttribute("aria-selected", "true");
+}
 
-    // Actualizar texto del botón
-    difficultyMobileBtn.querySelector(".btn-text").textContent = option.getAttribute("data-value");
-
-    // Cerrar dropdown
-    difficultyMobileBtn.setAttribute("aria-expanded", "false");
-    difficultyMobileBtn.querySelector(".arrow").style.transform = "rotate(0deg)";
-    dropdownDifficulty.style.display = "none";
-
-    // Cargar nuevo texto si no hay test activo
+// Uso para Dificultad
+setupDropdown(difficultyOptions, difficultyMobileBtn, dropdownDifficulty, (value) => {
+    currentDifficulty = value;
     if (!isTestActive && !isTestComplete) {
-      loadTextForDifficulty(currentDifficulty);
+        loadTextForDifficulty(currentDifficulty);
     }
-  });
 });
+
+// Uso para Modo
+setupDropdown(modeOptions, modeMobileBtn, dropdownMode, (value) => {
+    currentMode = value;
+});
+
 
 // Cargar archivo data.json, segun la seleccion de dificultad, muestra el texto
 async function loadTextForDifficulty(difficulty) {
