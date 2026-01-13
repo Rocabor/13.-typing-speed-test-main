@@ -202,8 +202,9 @@ body {
   font-size: 32px;
   line-height: 136%;
   letter-spacing: 0.4px;
-  filter: blur(16px);
+  /* filter: blur(16px); */
   height: auto;
+  z-index: -1;
 }
 
 .test-controls {
