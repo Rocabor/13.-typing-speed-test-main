@@ -22,7 +22,7 @@
       <header class="header">
         <picture>
           <source media="(min-width:760px)" srcset="assets/images/logo-large.svg" />
-          <img src="assets/images/logo-small.svg" alt="Typing Test Logo" class="logo" />
+          <img src="assets/images/logo-small.svg" alt="Typing Test Logo" class="logo" id="logo" />
         </picture>
 
         <div class="personal-best-text-cont">
@@ -132,8 +132,8 @@
         <img id="complete-icon" class="complete-icon" src="assets/images/icon-completed.svg" alt="" aria-hidden="true" />
 
         <div class="message-cont">
-          <h1 class="message">Test Complete!</h1>
-          <p class="message">Solid run. Keep pushing to beat your high score.</p>
+          <h1 id="h1">Test Complete!</h1>
+          <p class="message" id="text">Solid run. Keep pushing to beat your high score.</p>
         </div>
 
         <div class="stats-row-complete">
@@ -157,7 +157,7 @@
         </div>
 
         <button type="button" class="btn-go-again" id="go-again-btn" aria-label="Restart test">
-          Go Again
+          Beat this score
           <img src="assets/images/icon-restart.svg" alt="" aria-hidden="true" />
         </button>
       </section>

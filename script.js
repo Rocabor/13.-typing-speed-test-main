@@ -14,7 +14,7 @@ let personalBest = localStorage.getItem("typingPB") ? parseInt(localStorage.getI
 
 // Elementos DOM
 const textInputEl = document.getElementById("text-input");
-const startBtn = document.getElementById("start-btn");
+const startBtn = document.querySelectorAll("#start-btn, #typing-area");
 const restartBtn = document.getElementById("restart-btn");
 const goAgainBtn = document.getElementById("go-again-btn");
 const wpmEl = document.getElementById("wpm");
@@ -27,6 +27,9 @@ const incorrectEl = document.getElementById("Incorrect");
 const pbScoreEl = document.getElementById("pb-score");
 const mainContent = document.querySelector(".main-content");
 const testCompleteSection = document.querySelector(".test-complete");
+const messageTitle = document.getElementById("h1");
+const messageText = document.getElementById("text");
+const logo = document.getElementById("logo");
 
 // Elementos de dropdown
 const difficultyMobileBtn = document.getElementById("difficulty-mobile-btn");
@@ -49,6 +52,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Configurar eventos
   setupEventListeners();
+
+  // reset record personal en localStorage
+  // localStorage.removeItem("typingPB");
 });
 
 // Configurar record personal
@@ -83,6 +89,7 @@ function setupDropdowns() {
       // Rotar flecha
       const arrow = btn.querySelector(".arrow");
       arrow.style.transform = newState ? "rotate(180deg)" : "rotate(0deg)";
+      arrow.style.transition = "transform 0.3s";
     });
 
     // Manejar selección de opciones
@@ -292,7 +299,9 @@ function startTimer(timeLimit) {
 
 function setupEventListeners() {
   // Botón de inicio
-  startBtn.addEventListener("click", startTest);
+  startBtn.forEach((btn) => {
+    btn.addEventListener("click", startTest);
+  });
 
   // Botón de reinicio
   restartBtn.addEventListener("click", restartTest);
@@ -317,4 +326,224 @@ function setupEventListeners() {
 
   // Permitir que el área de texto reciba foco
   textInputEl.setAttribute("tabindex", "0");
+}
+
+// Finalizar test
+function endTest() {
+  isTestActive = false;
+  isTestComplete = true;
+
+  // Detener temporizador
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  // Calcular tiempo transcurrido en minutos
+  const elapsedSeconds = (new Date() - startTime) / 1000;
+  const elapsedMinutes = elapsedSeconds / 60;
+
+  // Calcular estadísticas finales
+  const wordsTyped = correctCount / 5;
+  const finalWPM = elapsedMinutes > 0 ? Math.round(wordsTyped / elapsedMinutes) : 0;
+  const totalTyped = correctCount + incorrectCount;
+  const finalAccuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 0;
+
+  // Actualizar UI de resultados
+  wpmCompleteEl.textContent = finalWPM;
+  accuracyCompleteEl.textContent = `${finalAccuracy}%`;
+  correctEl.textContent = correctCount;
+  incorrectEl.textContent = incorrectCount;
+
+  // Guardamos si es la primera vez ANTES de actualizar la variable
+  const isFirstTime = personalBest === 0;
+
+  if (isFirstTime || finalWPM > personalBest) {
+    personalBest = finalWPM;
+    localStorage.setItem("typingPB", personalBest.toString());
+    updatePersonalBestDisplay();
+
+    if (isFirstTime) {
+      // Primera vez - Baseline Established
+      messageTitle.textContent = "Baseline Established!";
+      messageText.textContent = "You've set the bar. Now the real challenge begins—time to beat it.";
+    } else {
+      // Nuevo récord personal
+      messageTitle.textContent = "High Score Smashed!";
+      messageText.textContent = "You're getting faster. That was incredible typing.";
+    }
+  } else {
+    // No se superó el récord
+    messageTitle.textContent = "Test Complete!";
+    messageText.textContent = "Solid run. Keep pushing to beat your high score.";
+  }
+
+  // Cambiar a vista de resultados
+  mainContent.style.display = "none";
+  testCompleteSection.style.display = "flex";
+}
+
+// Actualizar estadísticas
+function updateStats() {
+  if (!startTime) return;
+
+  // Calcular tiempo transcurrido en minutos
+  const elapsedTime = (new Date() - startTime) / 1000 / 60;
+
+  // Calcular WPM (palabras por minuto)
+  // Una palabra = 5 caracteres
+  const wordsTyped = correctCount / 5;
+  const wpm = elapsedTime > 0 ? Math.round(wordsTyped / elapsedTime) : 0;
+  wpmEl.textContent = wpm;
+
+  // Calcular precisión
+  const totalTyped = correctCount + incorrectCount;
+  const accuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 0;
+  accuracyEl.textContent = `${accuracy}%`;
+}
+
+// Reiniciar test
+function restartTest() {
+  // Detener temporizador
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  // Resetear estado
+  isTestActive = false;
+  isTestComplete = false;
+  startTime = null;
+  userInput = "";
+  currentIndex = 0;
+  correctCount = 0;
+  incorrectCount = 0;
+
+  // Resetear estadísticas en tiempo real
+  wpmEl.textContent = "---";
+  accuracyEl.textContent = "---%";
+
+  // Resetear tiempo según el modo actual
+  if (currentMode === "Timed (30s)") {
+    timeEl.textContent = "0:30";
+  } else if (currentMode === "Timed (60s)") {
+    timeEl.textContent = "1:00";
+  } else {
+    timeEl.textContent = "0:00";
+  }
+
+  // Mostrar controles de inicio
+  document.querySelector(".test-controls").style.display = "flex";
+
+  // Ocultar botón de reinicio
+  document.querySelector(".btn-restart-cont").style.display = "none";
+
+  // Cargar nuevo texto
+  loadTextForDifficulty(currentDifficulty);
+
+  // Asegurarse de que el texto esté borroso
+  textInputEl.style.filter = "blur(16px)";
+}
+
+// Manejar teclado
+function handleKeyDown(e) {
+  if (!isTestActive || isTestComplete) return;
+
+  // Permitir backspace y espacio
+  if (e.key === "Backspace" || e.key === " ") {
+    e.preventDefault();
+    // La lógica se manejará en keyup
+    return;
+  }
+
+  // Permitir todas las teclas imprimibles excepto Escape, Enter, Tab, etc.
+  if (e.key === "Escape" || e.key === "Enter" || e.key === "Tab") {
+    e.preventDefault();
+    return;
+  }
+
+  // Permitir cualquier tecla que sea un solo carácter (excepto teclas especiales)
+  if (e.key.length === 1) {
+    e.preventDefault(); // Prevenir comportamiento por defecto
+  }
+}
+
+// Manejar teclado
+function handleKeyUp(e) {
+  if (!isTestActive || isTestComplete) return;
+
+  // Ignorar teclas especiales excepto espacio y backspace
+  if (e.key.length > 1 && e.key !== " " && e.key !== "Backspace") return;
+
+  if (e.key === "Backspace") {
+    if (currentIndex > 0) {
+      currentIndex--;
+
+      // Remover el último carácter del input
+      userInput = userInput.slice(0, -1);
+
+      // Restaurar estado del carácter anterior
+      const prevCharEl = document.getElementById(`char-${currentIndex}`);
+      if (prevCharEl) {
+        prevCharEl.className = "char";
+
+        // Restar del conteo si estaba incorrecto
+        if (prevCharEl.classList.contains("incorrect")) {
+          incorrectCount--;
+        } else if (prevCharEl.classList.contains("correct")) {
+          correctCount--;
+        }
+      }
+
+      updateCursor();
+      updateStats();
+    }
+    return;
+  }
+
+  // Si llegamos al final del texto
+  if (currentIndex >= currentText.length) {
+    if (currentMode === "Passage") {
+      endTest();
+    }
+    return;
+  }
+
+  // Obtener el carácter actual
+  const currentChar = currentText[currentIndex];
+  const typedChar = e.key;
+
+  // Agregar al input del usuario
+  userInput += typedChar;
+
+  // Obtener elemento del carácter
+  const charEl = document.getElementById(`char-${currentIndex}`);
+  if (!charEl) return;
+
+  // Verificar si es correcto
+  const isCorrect = typedChar === currentChar;
+
+  // Actualizar clases
+  charEl.className = "char " + (isCorrect ? "correct" : "incorrect");
+
+  // Actualizar conteos
+  if (isCorrect) {
+    correctCount++;
+  } else {
+    incorrectCount++;
+  }
+
+  // Mover al siguiente carácter
+  currentIndex++;
+
+  // Actualizar cursor
+  updateCursor();
+
+  // Actualizar estadísticas
+  updateStats();
+
+  // Verificar si se completó en modo Passage
+  if (currentMode === "Passage" && currentIndex >= currentText.length) {
+    endTest();
+  }
 }
