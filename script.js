@@ -368,8 +368,7 @@ function endTest() {
     const testCompleteSection = document.querySelector(".test-complete");
 
     // Remover todas las clases de estado
-    testCompleteSection.classList.remove("no-stars", "with-stars");
-    mainElement.classList.remove("confetti");
+    testCompleteSection.classList.remove("no-stars");
 
     if (isFirstTime) {
       // Primera vez del test
@@ -380,8 +379,7 @@ function endTest() {
       pbIcon.classList.remove("new-pb-icon");
       pbIcon.classList.add("complete-icon");
 
-      // Mostrar estrellas para primera vez
-      testCompleteSection.classList.add("with-stars");
+      
     } else {
       // Nuevo Récord Personal
       messageTitle.textContent = "High Score Smashed!";
@@ -408,12 +406,11 @@ function endTest() {
     pbIcon.classList.remove("new-pb-icon");
     pbIcon.classList.add("complete-icon");
 
-    // Mostrar estrellas cuando no hay récord
+    // Mo Mostrar estrellas cuando no hay récord
     testCompleteSection.classList.remove("no-stars");
-    testCompleteSection.classList.add("with-stars");
+    
 
-    // Remover confetti
-    document.querySelector(".main").classList.remove("confetti");
+    
   }
 
   // Cambiar a vista de resultados
@@ -442,6 +439,9 @@ function updateStats() {
 
 // Reiniciar test
 function restartTest() {
+  // Remover confetti
+    document.querySelector(".main").classList.remove("confetti");
+
   // Detener temporizador
   if (timerInterval) {
     clearInterval(timerInterval);
