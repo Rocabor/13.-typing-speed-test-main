@@ -324,6 +324,13 @@ function setupEventListeners() {
     }
   });
 
+  // Reset record personal
+  logo.addEventListener("click", () => {
+    localStorage.removeItem("typingPB");
+     personalBest = 0;
+     updatePersonalBestDisplay();
+  });
+
   // Permitir que el área de texto reciba foco
   textInputEl.setAttribute("tabindex", "0");
 }
