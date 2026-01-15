@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <!-- displays site properly based on user's device -->
 
     <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" />
@@ -112,11 +112,12 @@
           <div class="text-row" id="typing-area">
             <div class="text-box" id="text-input" tabindex="0" role="textbox" aria-label="Texto para practicar mecanografía" aria-multiline="true"></div>
 
-            <textarea id="hidden-input" class="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+            <!-- Input transparente para capturar el tecleo -->
+            <input type="text" id="hidden-input" class="hidden-input" autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false" inputmode="text" />
 
             <div class="test-controls">
               <button type="button" class="btn-start" id="start-btn">Start Typing Test</button>
-              <span class="hint">Or click the text and start typing</span>
+              <span class="hint">Or tap the text and start typing</span>
             </div>
           </div>
         </section>
@@ -134,24 +135,21 @@
         <img id="complete-icon" class="complete-icon" src="assets/images/icon-completed.svg" alt="" aria-hidden="true" />
 
         <div class="message-cont">
-          <h1 id="h1">Test Complete!</h1>
-          <p class="message" id="text">Solid run. Keep pushing to beat your high score.</p>
+          <h1 class="logro" id="logro"></h1>
+          <p class="message" id="text"></p>
         </div>
 
         <div class="stats-row-complete">
-          <!-- WPM: Eliminamos aria-live porque role="status" ya lo hace -->
           <div class="wpm-cont" role="status">
             <span class="label">WPM:</span>
             <strong class="wpm-value" id="wpm-complete"></strong>
           </div>
 
-          <!-- Accuracy: Lo mismo aquí -->
           <div class="accuracy-cont" role="status">
             <span class="label">Accuracy:</span>
             <strong class="accuracy-value" id="accuracy-complete"></strong>
           </div>
 
-          <!-- Characters: Añadimos la conexión entre el grupo y su etiqueta -->
           <div class="characters-cont" role="group" aria-labelledby="label-chars">
             <span class="label" id="label-chars">Characters</span>
             <span class="characters-values">
