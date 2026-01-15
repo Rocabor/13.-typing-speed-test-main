@@ -137,21 +137,25 @@
         </div>
 
         <div class="stats-row-complete">
+          <!-- WPM: Eliminamos aria-live porque role="status" ya lo hace -->
           <div class="wpm-cont" role="status">
             <span class="label">WPM:</span>
-            <strong class="wpm-value" id="wpm-complete" aria-live="polite">---</strong>
+            <strong class="wpm-value" id="wpm-complete"></strong>
           </div>
 
+          <!-- Accuracy: Lo mismo aquí -->
           <div class="accuracy-cont" role="status">
             <span class="label">Accuracy:</span>
-            <strong class="accuracy-value" id="accuracy-complete" aria-live="polite">---%</strong>
+            <strong class="accuracy-value" id="accuracy-complete"></strong>
           </div>
 
-          <div class="characters-cont" role="status">
-            <span class="label">Characters</span>
+          <!-- Characters: Añadimos la conexión entre el grupo y su etiqueta -->
+          <div class="characters-cont" role="group" aria-labelledby="label-chars">
+            <span class="label" id="label-chars">Characters</span>
             <span class="characters-values">
-              <strong class="value-correct" id="Correct" aria-live="polite">---</strong> /
-              <strong class="value-incorrect" id="Incorrect" aria-live="polite">---</strong>
+              <strong class="value-correct" id="Correct" aria-live="polite"></strong>
+              <span aria-hidden="true" class="bar"> / </span>
+              <strong class="value-incorrect" id="Incorrect" aria-live="polite"></strong>
             </span>
           </div>
         </div>

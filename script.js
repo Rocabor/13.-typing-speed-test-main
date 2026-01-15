@@ -363,19 +363,57 @@ function endTest() {
     localStorage.setItem("typingPB", personalBest.toString());
     updatePersonalBestDisplay();
 
+    const pbIcon = document.getElementById("complete-icon");
+    const mainElement = document.querySelector(".main");
+    const testCompleteSection = document.querySelector(".test-complete");
+
+    // Remover todas las clases de estado
+    testCompleteSection.classList.remove("no-stars", "with-stars");
+    mainElement.classList.remove("confetti");
+
     if (isFirstTime) {
-      // Primera vez - Baseline Established
+      // Primera vez del test
       messageTitle.textContent = "Baseline Established!";
       messageText.textContent = "You've set the bar. Now the real challenge begins—time to beat it.";
+
+      pbIcon.src = "assets/images/icon-completed.svg";
+      pbIcon.classList.remove("new-pb-icon");
+      pbIcon.classList.add("complete-icon");
+
+      // Mostrar estrellas para primera vez
+      testCompleteSection.classList.add("with-stars");
     } else {
-      // Nuevo récord personal
+      // Nuevo Récord Personal
       messageTitle.textContent = "High Score Smashed!";
       messageText.textContent = "You're getting faster. That was incredible typing.";
+
+      pbIcon.src = "assets/images/icon-new-pb.svg";
+      pbIcon.classList.remove("complete-icon");
+      pbIcon.classList.add("new-pb-icon");
+
+      // Ocultar estrellas para nuevo récord
+      testCompleteSection.classList.add("no-stars");
+
+      // Mostrar confetti
+      mainElement.classList.add("confetti");
     }
   } else {
-    // No se superó el récord
     messageTitle.textContent = "Test Complete!";
     messageText.textContent = "Solid run. Keep pushing to beat your high score.";
+
+    const pbIcon = document.getElementById("complete-icon");
+    const testCompleteSection = document.querySelector(".test-complete");
+
+    pbIcon.src = "assets/images/icon-completed.svg";
+    pbIcon.classList.remove("new-pb-icon");
+    pbIcon.classList.add("complete-icon");
+
+    // Mostrar estrellas cuando no hay récord
+    testCompleteSection.classList.remove("no-stars");
+    testCompleteSection.classList.add("with-stars");
+
+    // Remover confetti
+    document.querySelector(".main").classList.remove("confetti");
   }
 
   // Cambiar a vista de resultados
