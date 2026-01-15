@@ -238,6 +238,50 @@ body {
   font-weight: 600;
 }
 
+/* Textarea oculto para capturar entrada */
+.hidden-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  border: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Cuando el test está activo, el textarea recibe focus */
+.hidden-input.active {
+  pointer-events: auto;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  z-index: 10;
+}
+
+/* Mejorar la experiencia táctil en móviles */
+@media (max-width: 767px) {
+  .text-box {
+    min-height: 300px;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  #text-input:active,
+  #text-input:focus {
+    outline: none;
+  }
+}
+
+
 /* MAIN CONTENT > TEXT CONTAINER // HOME - STARTED */
 
 .btn-restart-cont {

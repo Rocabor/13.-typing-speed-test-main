@@ -11,9 +11,11 @@ let currentDifficulty = "easy";
 let currentMode = "Timed (30s)";
 let isTestComplete = false;
 let personalBest = localStorage.getItem("typingPB") ? parseInt(localStorage.getItem("typingPB")) : 0;
+let hiddenInput = document.getElementById('hidden-input');
+let textDisplay = document.getElementById('text-input');
 
 // Elementos DOM
-const textInputEl = document.getElementById("text-input");
+const textInputEl = document.getElementById("text-display");
 const startBtn = document.querySelectorAll("#start-btn, #typing-area");
 const restartBtn = document.getElementById("restart-btn");
 const goAgainBtn = document.getElementById("go-again-btn");
@@ -169,10 +171,10 @@ async function loadTextForDifficulty(difficulty) {
 }
 
 function displayText() {
-  if (!textInputEl) return;
+  if (!textDisplay) return;
 
   // Limpiar contenido
-  textInputEl.innerHTML = "";
+  textDisplay.innerHTML = "";
 
   // Crear elementos para cada carácter
   for (let i = 0; i < currentText.length; i++) {
@@ -180,7 +182,7 @@ function displayText() {
     charSpan.textContent = currentText[i];
     charSpan.className = "char";
     charSpan.id = `char-${i}`;
-    textInputEl.appendChild(charSpan);
+    textDisplay.appendChild(charSpan);
   }
 
   // Establecer cursor inicial
@@ -188,20 +190,29 @@ function displayText() {
 
   // Si el test no está activo, aplicar blur
   if (!isTestActive) {
-    textInputEl.style.filter = "blur(16px)";
+    textDisplay.style.filter = "blur(16px)";
   } else {
-    textInputEl.style.filter = "none";
+    textDisplay.style.filter = "none";
   }
 }
 
 function updateCursor() {
   // Remover cursor anterior
   document.querySelectorAll(".cursor").forEach((el) => el.classList.remove("cursor"));
-
+  
   // Agregar cursor en la posición actual
   const currentCharEl = document.getElementById(`char-${currentIndex}`);
   if (currentCharEl) {
     currentCharEl.classList.add("cursor");
+    
+    // Hacer scroll para mantener el cursor visible en móviles
+    if (isTestActive) {
+      currentCharEl.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center'
+      });
+    }
   }
 }
 
@@ -233,10 +244,14 @@ function startTest() {
   userInput = "";
 
   // Quitar blur del texto
-  textInputEl.style.filter = "none";
+  textDisplay.style.filter = "none";
 
-  // Enfocar el área de texto
-  textInputEl.focus();
+  // Activar el textarea oculto para móviles
+  hiddenInput.classList.add('active');
+  hiddenInput.focus();
+  
+  // Limpiar el contenido del textarea
+  hiddenInput.value = '';
 
   // Ocultar controles de inicio
   document.querySelector(".test-controls").style.display = "none";
@@ -251,7 +266,6 @@ function startTest() {
   } else if (currentMode === "Timed (60s)") {
     timeLimit = 60;
   }
-  // Para Passage, timeLimit es null
 
   startTimer(timeLimit);
 
@@ -302,30 +316,40 @@ function setupEventListeners() {
   startBtn.forEach((btn) => {
     btn.addEventListener("click", startTest);
   });
-
+  
   // Botón de reinicio
   restartBtn.addEventListener("click", restartTest);
-
+  
   // Botón de "ir de nuevo"
   goAgainBtn.addEventListener("click", () => {
     testCompleteSection.style.display = "none";
     mainContent.style.display = "flex";
     restartTest();
   });
-
-  // Eventos de teclado en el área de texto
-  textInputEl.addEventListener("keydown", handleKeyDown);
-  textInputEl.addEventListener("keyup", handleKeyUp);
-
+  
   // Hacer clic en el texto para iniciar
-  textInputEl.addEventListener("click", () => {
+  textDisplay.addEventListener("click", () => {
     if (!isTestActive && !isTestComplete) {
       startTest();
+    } else if (isTestActive) {
+      // Si el test ya está activo, enfocar el textarea
+      hiddenInput.focus();
     }
   });
-
+  
+  // Evento para el textarea oculto
+  hiddenInput.addEventListener('input', handleHiddenInput);
+  
+  // Prevenir comportamiento por defecto en el textarea
+  hiddenInput.addEventListener('keydown', (e) => {
+    // Prevenir la tecla Enter para evitar saltos de línea
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+  });
+  
   // Permitir que el área de texto reciba foco
-  textInputEl.setAttribute("tabindex", "0");
+  textDisplay.setAttribute("tabindex", "0");
 }
 
 // Finalizar test
@@ -457,6 +481,10 @@ function restartTest() {
   correctCount = 0;
   incorrectCount = 0;
 
+  // Desactivar el textarea oculto
+  hiddenInput.classList.remove('active');
+  hiddenInput.value = '';
+
   // Resetear estadísticas en tiempo real
   wpmEl.textContent = "---";
   accuracyEl.textContent = "---%";
@@ -480,51 +508,28 @@ function restartTest() {
   loadTextForDifficulty(currentDifficulty);
 
   // Asegurarse de que el texto esté borroso
-  textInputEl.style.filter = "blur(16px)";
+  textDisplay.style.filter = "blur(16px)";
 }
 
 // Manejar teclado
-function handleKeyDown(e) {
+function handleHiddenInput(e) {
   if (!isTestActive || isTestComplete) return;
-
-  // Permitir backspace y espacio
-  if (e.key === "Backspace" || e.key === " ") {
-    e.preventDefault();
-    // La lógica se manejará en keyup
-    return;
-  }
-
-  // Permitir todas las teclas imprimibles excepto Escape, Enter, Tab, etc.
-  if (e.key === "Escape" || e.key === "Enter" || e.key === "Tab") {
-    e.preventDefault();
-    return;
-  }
-
-  // Permitir cualquier tecla que sea un solo carácter (excepto teclas especiales)
-  if (e.key.length === 1) {
-    e.preventDefault(); // Prevenir comportamiento por defecto
-  }
-}
-
-// Manejar teclado
-function handleKeyUp(e) {
-  if (!isTestActive || isTestComplete) return;
-
-  // Ignorar teclas especiales excepto espacio y backspace
-  if (e.key.length > 1 && e.key !== " " && e.key !== "Backspace") return;
-
-  if (e.key === "Backspace") {
+  
+  const value = hiddenInput.value;
+  
+  // Verificar si se presionó backspace
+  if (e.inputType === 'deleteContentBackward') {
     if (currentIndex > 0) {
       currentIndex--;
-
+      
       // Remover el último carácter del input
       userInput = userInput.slice(0, -1);
-
+      
       // Restaurar estado del carácter anterior
       const prevCharEl = document.getElementById(`char-${currentIndex}`);
       if (prevCharEl) {
         prevCharEl.className = "char";
-
+        
         // Restar del conteo si estaba incorrecto
         if (prevCharEl.classList.contains("incorrect")) {
           incorrectCount--;
@@ -532,13 +537,26 @@ function handleKeyUp(e) {
           correctCount--;
         }
       }
-
+      
+      // Actualizar el valor del textarea
+      hiddenInput.value = userInput;
       updateCursor();
       updateStats();
     }
     return;
   }
 
+  // Obtener el último carácter ingresado
+  if (value.length > userInput.length) {
+    const newChar = value[value.length - 1];
+    processCharacter(newChar);
+  }
+  
+  // Mantener sincronizado el valor del textarea
+  hiddenInput.value = userInput;
+}
+
+function processCharacter(typedChar) {
   // Si llegamos al final del texto
   if (currentIndex >= currentText.length) {
     if (currentMode === "Passage") {
@@ -546,40 +564,39 @@ function handleKeyUp(e) {
     }
     return;
   }
-
-  // Obtener el carácter actual
+  
+  // Obtener el carácter actual del texto
   const currentChar = currentText[currentIndex];
-  const typedChar = e.key;
-
+  
   // Agregar al input del usuario
   userInput += typedChar;
-
+  
   // Obtener elemento del carácter
   const charEl = document.getElementById(`char-${currentIndex}`);
   if (!charEl) return;
-
+  
   // Verificar si es correcto
   const isCorrect = typedChar === currentChar;
-
+  
   // Actualizar clases
   charEl.className = "char " + (isCorrect ? "correct" : "incorrect");
-
+  
   // Actualizar conteos
   if (isCorrect) {
     correctCount++;
   } else {
     incorrectCount++;
   }
-
+  
   // Mover al siguiente carácter
   currentIndex++;
-
+  
   // Actualizar cursor
   updateCursor();
-
+  
   // Actualizar estadísticas
   updateStats();
-
+  
   // Verificar si se completó en modo Passage
   if (currentMode === "Passage" && currentIndex >= currentText.length) {
     endTest();
