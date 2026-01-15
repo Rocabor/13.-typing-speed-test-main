@@ -13,7 +13,7 @@ let isTestComplete = false;
 let personalBest = localStorage.getItem("typingPB") ? parseInt(localStorage.getItem("typingPB")) : 0;
 
 // Elementos DOM
-const textDisplay = document.getElementById("text-display");
+const textInputEl = document.getElementById("text-input");
 const startBtn = document.querySelectorAll("#start-btn, #typing-area");
 const restartBtn = document.getElementById("restart-btn");
 const goAgainBtn = document.getElementById("go-again-btn");
@@ -30,7 +30,7 @@ const testCompleteSection = document.querySelector(".test-complete");
 const messageTitle = document.getElementById("h1");
 const messageText = document.getElementById("text");
 const logo = document.getElementById("logo");
-const hiddenInput = document.getElementById('hidden-input');
+const hiddenInput = document.getElementById('hidden-input'); // NUEVO: Para móviles
 
 // Elementos de dropdown
 const difficultyMobileBtn = document.getElementById("difficulty-mobile-btn");
@@ -132,7 +132,6 @@ function setupDropdowns() {
   // Configurar dropdown de modo
   handleDropdown(modeMobileBtn, dropdownMode, modeOptions, (value) => {
     currentMode = value;
-    // No necesitamos recargar nada aquí, solo actualizar el modo
   });
 
   // Cerrar dropdowns al hacer clic fuera
@@ -155,11 +154,8 @@ async function loadTextForDifficulty(difficulty) {
     const texts = data[difficulty];
 
     if (texts && texts.length > 0) {
-      // Seleccionar texto aleatorio
       const randomIndex = Math.floor(Math.random() * texts.length);
       currentText = texts[randomIndex].text;
-
-      // Mostrar texto
       displayText();
     }
   } catch (error) {
@@ -170,36 +166,29 @@ async function loadTextForDifficulty(difficulty) {
 }
 
 function displayText() {
-  if (!textDisplay) return;
+  if (!textInputEl) return;
 
-  // Limpiar contenido
-  textDisplay.innerHTML = "";
+  textInputEl.innerHTML = "";
 
-  // Crear elementos para cada carácter
   for (let i = 0; i < currentText.length; i++) {
     const charSpan = document.createElement("span");
     charSpan.textContent = currentText[i];
     charSpan.className = "char";
     charSpan.id = `char-${i}`;
-    textDisplay.appendChild(charSpan);
+    textInputEl.appendChild(charSpan);
   }
 
-  // Establecer cursor inicial
   updateCursor();
 
-  // Si el test no está activo, aplicar blur
   if (!isTestActive) {
-    textDisplay.style.filter = "blur(16px)";
+    textInputEl.style.filter = "blur(16px)";
   } else {
-    textDisplay.style.filter = "none";
+    textInputEl.style.filter = "none";
   }
 }
 
 function updateCursor() {
-  // Remover cursor anterior
   document.querySelectorAll(".cursor").forEach((el) => el.classList.remove("cursor"));
-  
-  // Agregar cursor en la posición actual
   const currentCharEl = document.getElementById(`char-${currentIndex}`);
   if (currentCharEl) {
     currentCharEl.classList.add("cursor");
@@ -209,19 +198,17 @@ function updateCursor() {
 // Actualizar tiempo en pantalla
 function updateTimeDisplay(time) {
   if (currentMode.startsWith("Timed")) {
-    // Modo Timed - cuenta regresiva
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
     timeEl.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
   } else {
-    // Modo Passage - tiempo transcurrido
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
     timeEl.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
   }
 }
 
-// Inicio del test
+// Inicio del test - MODIFICADO PARA MÓVILES
 function startTest() {
   if (isTestActive || isTestComplete) return;
 
@@ -233,28 +220,23 @@ function startTest() {
   incorrectCount = 0;
   userInput = "";
 
-  // Quitar blur del texto
-  textDisplay.style.filter = "none";
+  textInputEl.style.filter = "none";
 
-  // Activar el textarea oculto para móviles
-  if (hiddenInput) {
+  // Para móviles: activar el textarea oculto
+  if (isMobile() && hiddenInput) {
     hiddenInput.classList.add('active');
-    
-    // Pequeño retraso para asegurar que el DOM esté listo
     setTimeout(() => {
       hiddenInput.focus();
-      // Limpiar el contenido del textarea
       hiddenInput.value = '';
-    }, 50);
+    }, 100);
+  } else {
+    // Para desktop: enfocar el área de texto normal
+    textInputEl.focus();
   }
 
-  // Ocultar controles de inicio
   document.querySelector(".test-controls").style.display = "none";
-
-  // Mostrar botón de reinicio
   document.querySelector(".btn-restart-cont").style.display = "flex";
 
-  // Iniciar temporizador
   let timeLimit = null;
   if (currentMode === "Timed (30s)") {
     timeLimit = 30;
@@ -263,8 +245,6 @@ function startTest() {
   }
 
   startTimer(timeLimit);
-
-  // Iniciar actualización de estadísticas
   updateStats();
 }
 
@@ -275,7 +255,6 @@ function startTimer(timeLimit) {
   let timeLeft = timeLimit;
   let elapsedTime = 0;
 
-  // Mostrar tiempo inicial
   if (timeLimit !== null) {
     updateTimeDisplay(timeLeft);
   } else {
@@ -284,7 +263,6 @@ function startTimer(timeLimit) {
 
   timerInterval = setInterval(() => {
     if (timeLimit !== null) {
-      // Modo con tiempo límite
       timeLeft--;
       elapsedTime++;
       updateTimeDisplay(timeLeft);
@@ -294,16 +272,19 @@ function startTimer(timeLimit) {
         return;
       }
     } else {
-      // Modo Passage - tiempo transcurrido
       elapsedTime++;
       updateTimeDisplay(elapsedTime);
     }
 
-    // Verificar si se completó el texto en modo Passage
     if (currentMode === "Passage" && currentIndex >= currentText.length) {
       endTest();
     }
   }, 1000);
+}
+
+// Detectar si es móvil
+function isMobile() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 function setupEventListeners() {
@@ -314,14 +295,13 @@ function setupEventListeners() {
       startTest();
     });
   });
-  
+
   // Botón de reinicio
   restartBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    console.log("Restart button clicked");
     restartTest();
   });
-  
+
   // Botón de "ir de nuevo"
   goAgainBtn.addEventListener("click", (e) => {
     e.preventDefault();
@@ -329,274 +309,146 @@ function setupEventListeners() {
     mainContent.style.display = "flex";
     restartTest();
   });
-  
+
   // Hacer clic en el texto para iniciar
-  textDisplay.addEventListener("click", (e) => {
+  textInputEl.addEventListener("click", (e) => {
     e.preventDefault();
     if (!isTestActive && !isTestComplete) {
       startTest();
-    } else if (isTestActive && hiddenInput) {
-      // Si el test ya está activo, enfocar el textarea
+    } else if (isTestActive && isMobile() && hiddenInput) {
       hiddenInput.focus();
     }
   });
-  
-  // Evento para el textarea oculto
-  if (hiddenInput) {
-    hiddenInput.addEventListener('input', handleHiddenInput);
+
+  // Permitir que el área de texto reciba foco
+  textInputEl.setAttribute("tabindex", "0");
+
+  // Eventos de teclado para desktop
+  if (!isMobile()) {
+    textInputEl.addEventListener("keydown", handleKeyDown);
+    textInputEl.addEventListener("keyup", handleKeyUp);
+  }
+
+  // Evento para el textarea oculto (móviles)
+  if (hiddenInput && isMobile()) {
+    hiddenInput.addEventListener('input', handleMobileInput);
     
-    // Prevenir comportamiento por defecto en el textarea
     hiddenInput.addEventListener('keydown', (e) => {
-      // Prevenir la tecla Enter para evitar saltos de línea
       if (e.key === 'Enter') {
         e.preventDefault();
       }
     });
   }
-  
-  // Permitir que el área de texto reciba foco
-  textDisplay.setAttribute("tabindex", "0");
-  
-  // Evento de teclado para desktop (solo si no es móvil)
-  if (!isMobile()) {
-    textDisplay.addEventListener('keydown', handleDesktopKeyDown);
-  }
 }
 
-// Detectar si es móvil
-function isMobile() {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
-
-// Manejar teclado en desktop
-function handleDesktopKeyDown(e) {
-  if (!isTestActive || isTestComplete) return;
-  
-  // Permitir backspace y espacio
-  if (e.key === "Backspace" || e.key === " ") {
-    e.preventDefault();
-    // La lógica se manejará en keyup
-    return;
-  }
-  
-  // Permitir todas las teclas imprimibles excepto Escape, Enter, Tab, etc.
-  if (e.key === "Escape" || e.key === "Enter" || e.key === "Tab") {
-    e.preventDefault();
-    return;
-  }
-  
-  // Permitir cualquier tecla que sea un solo carácter (excepto teclas especiales)
-  if (e.key.length === 1) {
-    e.preventDefault();
-    processCharacter(e.key);
-  }
-}
-
-// Finalizar test
-function endTest() {
-  isTestActive = false;
-  isTestComplete = true;
-
-  // Detener temporizador
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-
-  // Calcular tiempo transcurrido en minutos
-  const elapsedSeconds = (new Date() - startTime) / 1000;
-  const elapsedMinutes = elapsedSeconds / 60;
-
-  // Calcular estadísticas finales
-  const wordsTyped = correctCount / 5;
-  const finalWPM = elapsedMinutes > 0 ? Math.round(wordsTyped / elapsedMinutes) : 0;
-  const totalTyped = correctCount + incorrectCount;
-  const finalAccuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 0;
-
-  // Actualizar UI de resultados
-  wpmCompleteEl.textContent = finalWPM;
-  accuracyCompleteEl.textContent = `${finalAccuracy}%`;
-  correctEl.textContent = correctCount;
-  incorrectEl.textContent = incorrectCount;
-
-  // Guardamos si es la primera vez ANTES de actualizar la variable
-  const isFirstTime = personalBest === 0;
-
-  if (isFirstTime || finalWPM > personalBest) {
-    personalBest = finalWPM;
-    localStorage.setItem("typingPB", personalBest.toString());
-    updatePersonalBestDisplay();
-
-    const pbIcon = document.getElementById("complete-icon");
-    const mainElement = document.querySelector(".main");
-    const testCompleteSection = document.querySelector(".test-complete");
-
-    // Remover todas las clases de estado
-    testCompleteSection.classList.remove("no-stars", "with-stars");
-    mainElement.classList.remove("confetti");
-
-    if (isFirstTime) {
-      // Primera vez del test
-      messageTitle.textContent = "Baseline Established!";
-      messageText.textContent = "You've set the bar. Now the real challenge begins—time to beat it.";
-
-      pbIcon.src = "assets/images/icon-completed.svg";
-      pbIcon.classList.remove("new-pb-icon");
-      pbIcon.classList.add("complete-icon");
-
-      // Mostrar estrellas para primera vez
-      testCompleteSection.classList.add("with-stars");
-    } else {
-      // Nuevo Récord Personal
-      messageTitle.textContent = "High Score Smashed!";
-      messageText.textContent = "You're getting faster. That was incredible typing.";
-
-      pbIcon.src = "assets/images/icon-new-pb.svg";
-      pbIcon.classList.remove("complete-icon");
-      pbIcon.classList.add("new-pb-icon");
-
-      // Ocultar estrellas para nuevo récord
-      testCompleteSection.classList.add("no-stars");
-
-      // Mostrar confetti
-      mainElement.classList.add("confetti");
-    }
-  } else {
-    messageTitle.textContent = "Test Complete!";
-    messageText.textContent = "Solid run. Keep pushing to beat your high score.";
-
-    const pbIcon = document.getElementById("complete-icon");
-    const testCompleteSection = document.querySelector(".test-complete");
-
-    pbIcon.src = "assets/images/icon-completed.svg";
-    pbIcon.classList.remove("new-pb-icon");
-    pbIcon.classList.add("complete-icon");
-
-    // Mostrar estrellas cuando no hay récord
-    testCompleteSection.classList.remove("no-stars");
-    testCompleteSection.classList.add("with-stars");
-
-    // Remover confetti
-    document.querySelector(".main").classList.remove("confetti");
-  }
-
-  // Desactivar el textarea oculto
-  if (hiddenInput) {
-    hiddenInput.classList.remove('active');
-    hiddenInput.blur();
-  }
-
-  // Cambiar a vista de resultados
-  mainContent.style.display = "none";
-  testCompleteSection.style.display = "flex";
-}
-
-// Actualizar estadísticas
-function updateStats() {
-  if (!startTime) return;
-
-  // Calcular tiempo transcurrido en minutos
-  const elapsedTime = (new Date() - startTime) / 1000 / 60;
-
-  // Calcular WPM (palabras por minuto)
-  // Una palabra = 5 caracteres
-  const wordsTyped = correctCount / 5;
-  const wpm = elapsedTime > 0 ? Math.round(wordsTyped / elapsedTime) : 0;
-  wpmEl.textContent = wpm;
-
-  // Calcular precisión
-  const totalTyped = correctCount + incorrectCount;
-  const accuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 0;
-  accuracyEl.textContent = `${accuracy}%`;
-}
-
-// Reiniciar test
-function restartTest() {
-  console.log("Restarting test...");
-  
-  // Detener temporizador
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-
-  // Resetear estado
-  isTestActive = false;
-  isTestComplete = false;
-  startTime = null;
-  userInput = "";
-  currentIndex = 0;
-  correctCount = 0;
-  incorrectCount = 0;
-
-  // Desactivar el textarea oculto
-  if (hiddenInput) {
-    hiddenInput.classList.remove('active');
-    hiddenInput.value = '';
-    hiddenInput.blur();
-  }
-
-  // Resetear estadísticas en tiempo real
-  wpmEl.textContent = "---";
-  accuracyEl.textContent = "---%";
-
-  // Resetear tiempo según el modo actual
-  if (currentMode === "Timed (30s)") {
-    timeEl.textContent = "0:30";
-  } else if (currentMode === "Timed (60s)") {
-    timeEl.textContent = "1:00";
-  } else {
-    timeEl.textContent = "0:00";
-  }
-
-  // Mostrar controles de inicio
-  document.querySelector(".test-controls").style.display = "flex";
-
-  // Ocultar botón de reinicio
-  document.querySelector(".btn-restart-cont").style.display = "none";
-
-  // Cargar nuevo texto
-  loadTextForDifficulty(currentDifficulty);
-
-  // Asegurarse de que el texto esté borroso
-  textDisplay.style.filter = "blur(16px)";
-}
-
-// Manejar entrada del textarea oculto (móviles)
-function handleHiddenInput(e) {
+// Manejar entrada en móviles
+function handleMobileInput(e) {
   if (!isTestActive || isTestComplete) return;
   
   const value = hiddenInput.value;
   
-  // Verificar si se presionó backspace
+  // Backspace
   if (e.inputType === 'deleteContentBackward') {
+    if (currentIndex > 0) {
+      currentIndex--;
+      userInput = userInput.slice(0, -1);
+      
+      const prevCharEl = document.getElementById(`char-${currentIndex}`);
+      if (prevCharEl) {
+        prevCharEl.className = "char";
+        if (prevCharEl.classList.contains("incorrect")) {
+          incorrectCount--;
+        } else if (prevCharEl.classList.contains("correct")) {
+          correctCount--;
+        }
+      }
+      
+      hiddenInput.value = userInput;
+      updateCursor();
+      updateStats();
+    }
+    return;
+  }
+
+  // Nuevo carácter
+  if (value.length > userInput.length) {
+    const newChar = value[value.length - 1];
+    processCharacter(newChar);
+    hiddenInput.value = userInput;
+  }
+}
+
+// Manejar teclado en desktop
+function handleKeyDown(e) {
+  if (!isTestActive || isTestComplete) return;
+
+  if (e.key === "Backspace" || e.key === " ") {
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key === "Escape" || e.key === "Enter" || e.key === "Tab") {
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key.length === 1) {
+    e.preventDefault();
+  }
+}
+
+// Manejar teclado en desktop
+function handleKeyUp(e) {
+  if (!isTestActive || isTestComplete) return;
+
+  if (e.key.length > 1 && e.key !== " " && e.key !== "Backspace") return;
+
+  if (e.key === "Backspace") {
     handleBackspace();
     return;
   }
 
-  // Obtener el último carácter ingresado
-  if (value.length > userInput.length) {
-    const newChar = value[value.length - 1];
-    processCharacter(newChar);
+  if (currentIndex >= currentText.length) {
+    if (currentMode === "Passage") {
+      endTest();
+    }
+    return;
   }
-  
-  // Mantener sincronizado el valor del textarea
-  hiddenInput.value = userInput;
+
+  const currentChar = currentText[currentIndex];
+  const typedChar = e.key;
+  userInput += typedChar;
+
+  const charEl = document.getElementById(`char-${currentIndex}`);
+  if (!charEl) return;
+
+  const isCorrect = typedChar === currentChar;
+  charEl.className = "char " + (isCorrect ? "correct" : "incorrect");
+
+  if (isCorrect) {
+    correctCount++;
+  } else {
+    incorrectCount++;
+  }
+
+  currentIndex++;
+  updateCursor();
+  updateStats();
+
+  if (currentMode === "Passage" && currentIndex >= currentText.length) {
+    endTest();
+  }
 }
 
+// Función auxiliar para backspace
 function handleBackspace() {
   if (currentIndex > 0) {
     currentIndex--;
-    
-    // Remover el último carácter del input
     userInput = userInput.slice(0, -1);
     
-    // Restaurar estado del carácter anterior
     const prevCharEl = document.getElementById(`char-${currentIndex}`);
     if (prevCharEl) {
       prevCharEl.className = "char";
-      
-      // Restar del conteo si estaba incorrecto
       if (prevCharEl.classList.contains("incorrect")) {
         incorrectCount--;
       } else if (prevCharEl.classList.contains("correct")) {
@@ -609,8 +461,8 @@ function handleBackspace() {
   }
 }
 
+// Función para procesar caracteres (compartida)
 function processCharacter(typedChar) {
-  // Si llegamos al final del texto
   if (currentIndex >= currentText.length) {
     if (currentMode === "Passage") {
       endTest();
@@ -618,40 +470,152 @@ function processCharacter(typedChar) {
     return;
   }
   
-  // Obtener el carácter actual del texto
   const currentChar = currentText[currentIndex];
-  
-  // Agregar al input del usuario
   userInput += typedChar;
   
-  // Obtener elemento del carácter
   const charEl = document.getElementById(`char-${currentIndex}`);
   if (!charEl) return;
   
-  // Verificar si es correcto
   const isCorrect = typedChar === currentChar;
-  
-  // Actualizar clases
   charEl.className = "char " + (isCorrect ? "correct" : "incorrect");
   
-  // Actualizar conteos
   if (isCorrect) {
     correctCount++;
   } else {
     incorrectCount++;
   }
   
-  // Mover al siguiente carácter
   currentIndex++;
-  
-  // Actualizar cursor
   updateCursor();
-  
-  // Actualizar estadísticas
   updateStats();
   
-  // Verificar si se completó en modo Passage
   if (currentMode === "Passage" && currentIndex >= currentText.length) {
     endTest();
   }
+}
+
+// Finalizar test
+function endTest() {
+  isTestActive = false;
+  isTestComplete = true;
+
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  // Desactivar textarea en móviles
+  if (hiddenInput && isMobile()) {
+    hiddenInput.classList.remove('active');
+    hiddenInput.blur();
+  }
+
+  const elapsedSeconds = (new Date() - startTime) / 1000;
+  const elapsedMinutes = elapsedSeconds / 60;
+  const wordsTyped = correctCount / 5;
+  const finalWPM = elapsedMinutes > 0 ? Math.round(wordsTyped / elapsedMinutes) : 0;
+  const totalTyped = correctCount + incorrectCount;
+  const finalAccuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 0;
+
+  wpmCompleteEl.textContent = finalWPM;
+  accuracyCompleteEl.textContent = `${finalAccuracy}%`;
+  correctEl.textContent = correctCount;
+  incorrectEl.textContent = incorrectCount;
+
+  const isFirstTime = personalBest === 0;
+
+  if (isFirstTime || finalWPM > personalBest) {
+    personalBest = finalWPM;
+    localStorage.setItem("typingPB", personalBest.toString());
+    updatePersonalBestDisplay();
+
+    const pbIcon = document.getElementById("complete-icon");
+    const mainElement = document.querySelector(".main");
+
+    testCompleteSection.classList.remove("no-stars", "with-stars");
+    mainElement.classList.remove("confetti");
+
+    if (isFirstTime) {
+      messageTitle.textContent = "Baseline Established!";
+      messageText.textContent = "You've set the bar. Now the real challenge begins—time to beat it.";
+      pbIcon.src = "assets/images/icon-completed.svg";
+      pbIcon.classList.remove("new-pb-icon");
+      pbIcon.classList.add("complete-icon");
+      testCompleteSection.classList.add("with-stars");
+    } else {
+      messageTitle.textContent = "High Score Smashed!";
+      messageText.textContent = "You're getting faster. That was incredible typing.";
+      pbIcon.src = "assets/images/icon-new-pb.svg";
+      pbIcon.classList.remove("complete-icon");
+      pbIcon.classList.add("new-pb-icon");
+      testCompleteSection.classList.add("no-stars");
+      mainElement.classList.add("confetti");
+    }
+  } else {
+    messageTitle.textContent = "Test Complete!";
+    messageText.textContent = "Solid run. Keep pushing to beat your high score.";
+    const pbIcon = document.getElementById("complete-icon");
+    pbIcon.src = "assets/images/icon-completed.svg";
+    pbIcon.classList.remove("new-pb-icon");
+    pbIcon.classList.add("complete-icon");
+    testCompleteSection.classList.remove("no-stars");
+    testCompleteSection.classList.add("with-stars");
+    document.querySelector(".main").classList.remove("confetti");
+  }
+
+  mainContent.style.display = "none";
+  testCompleteSection.style.display = "flex";
+}
+
+// Actualizar estadísticas
+function updateStats() {
+  if (!startTime) return;
+
+  const elapsedTime = (new Date() - startTime) / 1000 / 60;
+  const wordsTyped = correctCount / 5;
+  const wpm = elapsedTime > 0 ? Math.round(wordsTyped / elapsedTime) : 0;
+  wpmEl.textContent = wpm;
+
+  const totalTyped = correctCount + incorrectCount;
+  const accuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 0;
+  accuracyEl.textContent = `${accuracy}%`;
+}
+
+// Reiniciar test - MODIFICADO PARA MÓVILES
+function restartTest() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  isTestActive = false;
+  isTestComplete = false;
+  startTime = null;
+  userInput = "";
+  currentIndex = 0;
+  correctCount = 0;
+  incorrectCount = 0;
+
+  // Desactivar textarea en móviles
+  if (hiddenInput && isMobile()) {
+    hiddenInput.classList.remove('active');
+    hiddenInput.value = '';
+    hiddenInput.blur();
+  }
+
+  wpmEl.textContent = "---";
+  accuracyEl.textContent = "---%";
+
+  if (currentMode === "Timed (30s)") {
+    timeEl.textContent = "0:30";
+  } else if (currentMode === "Timed (60s)") {
+    timeEl.textContent = "1:00";
+  } else {
+    timeEl.textContent = "0:00";
+  }
+
+  document.querySelector(".test-controls").style.display = "flex";
+  document.querySelector(".btn-restart-cont").style.display = "none";
+  loadTextForDifficulty(currentDifficulty);
+  textInputEl.style.filter = "blur(16px)";
 }

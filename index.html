@@ -110,16 +110,9 @@
 
         <section class="text-container" aria-label="Área de escritura">
           <div class="text-row" id="typing-area">
-            <div class="text-box" id="text-display" tabindex="0" role="textbox" aria-label="Texto para practicar mecanografía" aria-multiline="true"></div>
+            <div class="text-box" id="text-input" tabindex="0" role="textbox" aria-label="Texto para practicar mecanografía" aria-multiline="true"></div>
 
-            <!-- Textarea oculto para capturar entrada en móviles -->
-            <textarea id="hidden-input" 
-              class="hidden-input" 
-              autocomplete="off" 
-              autocorrect="off" 
-              autocapitalize="off" 
-              spellcheck="false"
-              aria-hidden="true"></textarea>
+            <textarea id="hidden-input" class="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
 
             <div class="test-controls">
               <button type="button" class="btn-start" id="start-btn">Start Typing Test</button>
