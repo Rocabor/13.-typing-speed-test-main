@@ -196,6 +196,9 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+
+  position: relative;
+  overflow: hidden;
 }
 
 .text-box {
@@ -240,9 +243,9 @@ body {
 
 /* Textarea oculto para capturar entrada */
 .hidden-input {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: fixed;
+  top: -100px;
+  left: -100px;
   width: 1px;
   height: 1px;
   opacity: 0;
@@ -256,28 +259,67 @@ body {
   outline: none;
   padding: 0;
   margin: 0;
+  z-index: -1;
 }
 
 /* Cuando el test está activo, el textarea recibe focus */
 .hidden-input.active {
   pointer-events: auto;
-  width: 100%;
-  height: 100%;
-  opacity: 1;
-  z-index: 10;
+  z-index: 1000;
+  opacity: 0.01; /* Mínima opacidad para que funcione en iOS */
 }
 
-/* Mejorar la experiencia táctil en móviles */
+/* Prevenir scroll del teclado en móviles */
+.text-container {
+  overflow: hidden;
+}
+
+* Mejorar el botón de restart para móviles */
+.btn-restart-cont {
+  position: sticky;
+  bottom: 0;
+  background: var(--neutral-900);
+  z-index: 100;
+  padding-top: 10px;
+}
+
+.btn-restart {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevenir zoom en inputs en iOS */
 @media (max-width: 767px) {
-  .text-box {
-    min-height: 300px;
-    -webkit-user-select: none;
-    user-select: none;
+  input, textarea, #hidden-input {
+    font-size: 16px !important;
   }
   
-  #text-input:active,
-  #text-input:focus {
-    outline: none;
+  .text-box {
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: pan-y;
+    max-height: 60vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  
+  /* Mejorar la experiencia táctil */
+  .btn-start, .btn-restart, .btn-go-again {
+    min-height: 44px;
+    font-size: 18px;
+  }
+  
+  /* Prevenir scroll no deseado */
+  body, html {
+    overflow-x: hidden;
+    position: relative;
+    height: 100%;
+  }
+  
+  .main {
+    min-height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

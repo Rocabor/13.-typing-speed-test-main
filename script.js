@@ -11,11 +11,9 @@ let currentDifficulty = "easy";
 let currentMode = "Timed (30s)";
 let isTestComplete = false;
 let personalBest = localStorage.getItem("typingPB") ? parseInt(localStorage.getItem("typingPB")) : 0;
-let hiddenInput = document.getElementById('hidden-input');
-let textDisplay = document.getElementById('text-input');
 
 // Elementos DOM
-const textInputEl = document.getElementById("text-display");
+const textDisplay = document.getElementById("text-display");
 const startBtn = document.querySelectorAll("#start-btn, #typing-area");
 const restartBtn = document.getElementById("restart-btn");
 const goAgainBtn = document.getElementById("go-again-btn");
@@ -32,6 +30,7 @@ const testCompleteSection = document.querySelector(".test-complete");
 const messageTitle = document.getElementById("h1");
 const messageText = document.getElementById("text");
 const logo = document.getElementById("logo");
+const hiddenInput = document.getElementById('hidden-input');
 
 // Elementos de dropdown
 const difficultyMobileBtn = document.getElementById("difficulty-mobile-btn");
@@ -204,15 +203,6 @@ function updateCursor() {
   const currentCharEl = document.getElementById(`char-${currentIndex}`);
   if (currentCharEl) {
     currentCharEl.classList.add("cursor");
-    
-    // Hacer scroll para mantener el cursor visible en móviles
-    if (isTestActive) {
-      currentCharEl.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center'
-      });
-    }
   }
 }
 
@@ -247,11 +237,16 @@ function startTest() {
   textDisplay.style.filter = "none";
 
   // Activar el textarea oculto para móviles
-  hiddenInput.classList.add('active');
-  hiddenInput.focus();
-  
-  // Limpiar el contenido del textarea
-  hiddenInput.value = '';
+  if (hiddenInput) {
+    hiddenInput.classList.add('active');
+    
+    // Pequeño retraso para asegurar que el DOM esté listo
+    setTimeout(() => {
+      hiddenInput.focus();
+      // Limpiar el contenido del textarea
+      hiddenInput.value = '';
+    }, 50);
+  }
 
   // Ocultar controles de inicio
   document.querySelector(".test-controls").style.display = "none";
@@ -314,42 +309,87 @@ function startTimer(timeLimit) {
 function setupEventListeners() {
   // Botón de inicio
   startBtn.forEach((btn) => {
-    btn.addEventListener("click", startTest);
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      startTest();
+    });
   });
   
   // Botón de reinicio
-  restartBtn.addEventListener("click", restartTest);
+  restartBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    console.log("Restart button clicked");
+    restartTest();
+  });
   
   // Botón de "ir de nuevo"
-  goAgainBtn.addEventListener("click", () => {
+  goAgainBtn.addEventListener("click", (e) => {
+    e.preventDefault();
     testCompleteSection.style.display = "none";
     mainContent.style.display = "flex";
     restartTest();
   });
   
   // Hacer clic en el texto para iniciar
-  textDisplay.addEventListener("click", () => {
+  textDisplay.addEventListener("click", (e) => {
+    e.preventDefault();
     if (!isTestActive && !isTestComplete) {
       startTest();
-    } else if (isTestActive) {
+    } else if (isTestActive && hiddenInput) {
       // Si el test ya está activo, enfocar el textarea
       hiddenInput.focus();
     }
   });
   
   // Evento para el textarea oculto
-  hiddenInput.addEventListener('input', handleHiddenInput);
-  
-  // Prevenir comportamiento por defecto en el textarea
-  hiddenInput.addEventListener('keydown', (e) => {
-    // Prevenir la tecla Enter para evitar saltos de línea
-    if (e.key === 'Enter') {
-      e.preventDefault();
-    }
-  });
+  if (hiddenInput) {
+    hiddenInput.addEventListener('input', handleHiddenInput);
+    
+    // Prevenir comportamiento por defecto en el textarea
+    hiddenInput.addEventListener('keydown', (e) => {
+      // Prevenir la tecla Enter para evitar saltos de línea
+      if (e.key === 'Enter') {
+        e.preventDefault();
+      }
+    });
+  }
   
   // Permitir que el área de texto reciba foco
   textDisplay.setAttribute("tabindex", "0");
+  
+  // Evento de teclado para desktop (solo si no es móvil)
+  if (!isMobile()) {
+    textDisplay.addEventListener('keydown', handleDesktopKeyDown);
+  }
+}
+
+// Detectar si es móvil
+function isMobile() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// Manejar teclado en desktop
+function handleDesktopKeyDown(e) {
+  if (!isTestActive || isTestComplete) return;
+  
+  // Permitir backspace y espacio
+  if (e.key === "Backspace" || e.key === " ") {
+    e.preventDefault();
+    // La lógica se manejará en keyup
+    return;
+  }
+  
+  // Permitir todas las teclas imprimibles excepto Escape, Enter, Tab, etc.
+  if (e.key === "Escape" || e.key === "Enter" || e.key === "Tab") {
+    e.preventDefault();
+    return;
+  }
+  
+  // Permitir cualquier tecla que sea un solo carácter (excepto teclas especiales)
+  if (e.key.length === 1) {
+    e.preventDefault();
+    processCharacter(e.key);
+  }
 }
 
 // Finalizar test
@@ -440,6 +480,12 @@ function endTest() {
     document.querySelector(".main").classList.remove("confetti");
   }
 
+  // Desactivar el textarea oculto
+  if (hiddenInput) {
+    hiddenInput.classList.remove('active');
+    hiddenInput.blur();
+  }
+
   // Cambiar a vista de resultados
   mainContent.style.display = "none";
   testCompleteSection.style.display = "flex";
@@ -466,6 +512,8 @@ function updateStats() {
 
 // Reiniciar test
 function restartTest() {
+  console.log("Restarting test...");
+  
   // Detener temporizador
   if (timerInterval) {
     clearInterval(timerInterval);
@@ -482,8 +530,11 @@ function restartTest() {
   incorrectCount = 0;
 
   // Desactivar el textarea oculto
-  hiddenInput.classList.remove('active');
-  hiddenInput.value = '';
+  if (hiddenInput) {
+    hiddenInput.classList.remove('active');
+    hiddenInput.value = '';
+    hiddenInput.blur();
+  }
 
   // Resetear estadísticas en tiempo real
   wpmEl.textContent = "---";
@@ -511,7 +562,7 @@ function restartTest() {
   textDisplay.style.filter = "blur(16px)";
 }
 
-// Manejar teclado
+// Manejar entrada del textarea oculto (móviles)
 function handleHiddenInput(e) {
   if (!isTestActive || isTestComplete) return;
   
@@ -519,30 +570,7 @@ function handleHiddenInput(e) {
   
   // Verificar si se presionó backspace
   if (e.inputType === 'deleteContentBackward') {
-    if (currentIndex > 0) {
-      currentIndex--;
-      
-      // Remover el último carácter del input
-      userInput = userInput.slice(0, -1);
-      
-      // Restaurar estado del carácter anterior
-      const prevCharEl = document.getElementById(`char-${currentIndex}`);
-      if (prevCharEl) {
-        prevCharEl.className = "char";
-        
-        // Restar del conteo si estaba incorrecto
-        if (prevCharEl.classList.contains("incorrect")) {
-          incorrectCount--;
-        } else if (prevCharEl.classList.contains("correct")) {
-          correctCount--;
-        }
-      }
-      
-      // Actualizar el valor del textarea
-      hiddenInput.value = userInput;
-      updateCursor();
-      updateStats();
-    }
+    handleBackspace();
     return;
   }
 
@@ -554,6 +582,31 @@ function handleHiddenInput(e) {
   
   // Mantener sincronizado el valor del textarea
   hiddenInput.value = userInput;
+}
+
+function handleBackspace() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    
+    // Remover el último carácter del input
+    userInput = userInput.slice(0, -1);
+    
+    // Restaurar estado del carácter anterior
+    const prevCharEl = document.getElementById(`char-${currentIndex}`);
+    if (prevCharEl) {
+      prevCharEl.className = "char";
+      
+      // Restar del conteo si estaba incorrecto
+      if (prevCharEl.classList.contains("incorrect")) {
+        incorrectCount--;
+      } else if (prevCharEl.classList.contains("correct")) {
+        correctCount--;
+      }
+    }
+    
+    updateCursor();
+    updateStats();
+  }
 }
 
 function processCharacter(typedChar) {
