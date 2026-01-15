@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- displays site properly based on user's device -->
 
     <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" />
@@ -22,7 +22,7 @@
       <header class="header">
         <picture>
           <source media="(min-width:760px)" srcset="assets/images/logo-large.svg" />
-          <img src="assets/images/logo-small.svg" alt="Typing Test Logo" class="logo" id="logo" />
+          <img src="assets/images/logo-small.svg" alt="Typing Test Logo - Double tap to reset personal best" class="logo" id="logo" title="Double tap to reset personal best" />
         </picture>
 
         <div class="personal-best-text-cont">
@@ -113,11 +113,11 @@
             <div class="text-box" id="text-input" tabindex="0" role="textbox" aria-label="Texto para practicar mecanografía" aria-multiline="true"></div>
 
             <!-- Input transparente para capturar el tecleo -->
-            <input type="text" id="hidden-input" class="hidden-input" autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false" inputmode="text" />
+            <input type="text" id="hidden-input" class="hidden-input" autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false" />
 
             <div class="test-controls">
               <button type="button" class="btn-start" id="start-btn">Start Typing Test</button>
-              <span class="hint">Or tap the text and start typing</span>
+              <span class="hint">Or click the text and start typing</span>
             </div>
           </div>
         </section>
