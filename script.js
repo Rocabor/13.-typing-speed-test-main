@@ -93,6 +93,15 @@ function setupMobileFunctionality() {
     hintElement.textContent = "Or tap the text and start typing";
   }
 
+  // Mejorar el área de texto para móviles
+  const textBox = document.querySelector('.text-box');
+  if (textBox) {
+    textBox.style.maxHeight = '70vh';
+    textBox.style.overflowY = 'auto';
+    textBox.style.WebkitOverflowScrolling = 'touch';
+    textBox.style.padding = '10px 0';
+  }
+
   // Prevenir zoom en elementos interactivos
   document.addEventListener('touchstart', function(event) {
     if (event.touches.length > 1) {
@@ -118,6 +127,73 @@ function setupMobileFunctionality() {
 
   // Para móviles: configurar textarea invisible para capturar teclas
   setupMobileKeyboardInput();
+}
+
+// Función para centrar el cursor al inicio del test (móviles)
+function centerCursorOnStart() {
+  if (!isMobile) return;
+  
+  const textBox = document.querySelector('.text-box');
+  if (!textBox) return;
+  
+  // Desplazar al inicio
+  textBox.scrollTop = 0;
+  
+  // Si hay un cursor, centrarlo después de un breve delay
+  setTimeout(() => {
+    const cursorElement = document.querySelector('.cursor');
+    if (cursorElement && isTestActive) {
+      scrollToCursor();
+    }
+  }, 100);
+}
+
+// Función para hacer scroll automático al cursor (móviles)
+function scrollToCursor() {
+  if (!isMobile) return; // Solo aplica para móviles
+  
+  const cursorElement = document.querySelector('.cursor');
+  if (!cursorElement) return;
+  
+  // Obtener el contenedor del texto
+  const textBox = document.querySelector('.text-box');
+  if (!textBox) return;
+  
+  // Calcular la posición del cursor relativa al contenedor
+  const cursorRect = cursorElement.getBoundingClientRect();
+  const textBoxRect = textBox.getBoundingClientRect();
+  
+  // Si el cursor está fuera de la vista visible
+  const cursorTop = cursorRect.top;
+  const textBoxTop = textBoxRect.top;
+  const textBoxBottom = textBoxRect.bottom;
+  
+  // Margen de seguridad (20px)
+  const margin = 20;
+  
+  // Si el cursor está cerca del borde inferior
+  if (cursorRect.bottom > (textBoxBottom - margin)) {
+    // Calcular cuánto necesitamos desplazar
+    const offset = cursorRect.bottom - textBoxBottom + margin;
+    textBox.scrollTop += offset;
+  }
+  // Si el cursor está cerca del borde superior
+  else if (cursorRect.top < (textBoxTop + margin)) {
+    const offset = textBoxTop + margin - cursorRect.top;
+    textBox.scrollTop -= offset;
+  }
+  
+  // También desplazar la ventana si es necesario (para dispositivos muy pequeños)
+  if (window.innerHeight < 600) {
+    const cursorPosition = cursorRect.top;
+    const windowHeight = window.innerHeight;
+    
+    // Si el cursor está en la mitad inferior de la pantalla
+    if (cursorPosition > windowHeight * 0.7) {
+      const scrollAmount = cursorPosition - (windowHeight * 0.3);
+      window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+    }
+  }
 }
 
 // Configurar input de teclado para móviles
@@ -225,6 +301,12 @@ function processCharacter(typedChar) {
       }
 
       updateCursor();
+      
+      // Desplazar al cursor (especialmente importante en móviles)
+      if (isMobile) {
+        setTimeout(scrollToCursor, 10);
+      }
+      
       updateStats();
     }
     return;
@@ -266,6 +348,11 @@ function processCharacter(typedChar) {
 
   // Actualizar cursor
   updateCursor();
+  
+  // Desplazar al cursor (especialmente importante en móviles)
+  if (isMobile) {
+    setTimeout(scrollToCursor, 10);
+  }
 
   // Actualizar estadísticas
   updateStats();
@@ -483,6 +570,12 @@ function updateCursor() {
   const currentCharEl = document.getElementById(`char-${currentIndex}`);
   if (currentCharEl) {
     currentCharEl.classList.add("cursor");
+    
+    // Desplazar al cursor en móviles
+    if (isMobile && isTestActive) {
+      // Usar setTimeout para asegurar que el DOM se haya actualizado
+      setTimeout(scrollToCursor, 10);
+    }
   }
 }
 
@@ -516,6 +609,11 @@ function startTest() {
 
   // Quitar blur del texto
   textInputEl.style.filter = "none";
+
+  // Centrar cursor en móviles
+  if (isMobile) {
+    centerCursorOnStart();
+  }
 
   // Enfocar el área de texto (solo en desktop)
   if (!isMobile) {
@@ -630,6 +728,26 @@ function setupEventListeners() {
 
   // Permitir que el área de texto reciba foco
   textInputEl.setAttribute("tabindex", "0");
+
+  // Manejar cambios en el teclado virtual (móviles)
+  if (isMobile) {
+    // Manejar cambios en el teclado virtual
+    window.addEventListener('resize', function() {
+      if (isTestActive) {
+        setTimeout(scrollToCursor, 300);
+      }
+    });
+    
+    // También desplazar cuando el teclado se abra/cierre
+    let lastHeight = window.innerHeight;
+    window.addEventListener('resize', function() {
+      if (window.innerHeight < lastHeight && isTestActive) {
+        // Teclado probablemente se abrió
+        setTimeout(scrollToCursor, 500);
+      }
+      lastHeight = window.innerHeight;
+    });
+  }
 }
 
 // Finalizar test
