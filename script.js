@@ -33,6 +33,7 @@ const testCompleteSection = document.querySelector(".test-complete");
 const messageTitle = document.getElementById("h1");
 const messageText = document.getElementById("text");
 const logo = document.getElementById("logo");
+const mainElement = document.querySelector(".main");
 
 // Elementos de dropdown
 const difficultyMobileBtn = document.getElementById("difficulty-mobile-btn");
@@ -56,35 +57,35 @@ document.addEventListener("DOMContentLoaded", () => {
   // Configurar eventos
   setupEventListeners();
 
-   // Reset record personal con doble tap en móviles
-  logo.addEventListener("click", handleLogoClick);
-
-  if (isMobile) {
-    logo.addEventListener("touchstart", handleLogoTouch, { passive: true });
-  }
+  // Configurar eventos del logo
+  setupLogoEvents();
 });
 
-// Manejar clic en logo solo en desktop
-function handleLogoClick() {
-  if (!isMobile) {
-    if (confirm("¿Quieres reiniciar tu récord personal?")) {
-      resetPersonalBest();
-    }
+// Configurar eventos del logo
+function setupLogoEvents() {
+  if (isMobile) {
+    // Solo para móviles: doble tap para reiniciar récord
+    logo.addEventListener("touchstart", handleLogoTouch, { passive: true });
+    logo.addEventListener("click", (e) => e.preventDefault()); // Prevenir clic accidental
+  } else {
+    // Solo para desktop: clic normal
+    logo.addEventListener("click", () => {
+      if (confirm("¿Quieres reiniciar tu récord personal?")) {
+        resetPersonalBest();
+      }
+    });
   }
 }
 
 // Manejar toque en logo (para móviles)
 function handleLogoTouch(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  
   const currentTime = new Date().getTime();
   const tapLength = currentTime - lastTapTime;
   
   if (tapLength < 500 && tapLength > 0) {
     // Doble tap detectado
     tapCount++;
-    if (tapCount === 3) {
+    if (tapCount === 2) { // Cambiado de 3 a 2 para doble tap
       if (confirm("¿Quieres reiniciar tu récord personal?")) {
         resetPersonalBest();
       }
@@ -179,7 +180,16 @@ function setupDropdowns() {
   // Configurar dropdown de modo
   handleDropdown(modeMobileBtn, dropdownMode, modeOptions, (value) => {
     currentMode = value;
-    // No necesitamos recargar nada aquí, solo actualizar el modo
+    // Resetear tiempo según el modo seleccionado
+    if (!isTestActive && !isTestComplete) {
+      if (currentMode === "Timed (30s)") {
+        timeEl.textContent = "0:30";
+      } else if (currentMode === "Timed (60s)") {
+        timeEl.textContent = "1:00";
+      } else {
+        timeEl.textContent = "0:00";
+      }
+    }
   });
 
   // Cerrar dropdowns al hacer clic fuera
@@ -372,13 +382,6 @@ function setupEventListeners() {
     }
   });
 
-  // Reset record personal
-  logo.addEventListener("click", () => {
-    localStorage.removeItem("typingPB");
-     personalBest = 0;
-     updatePersonalBestDisplay();
-  });
-
   // Permitir que el área de texto reciba foco
   textInputEl.setAttribute("tabindex", "0");
 }
@@ -413,8 +416,6 @@ function endTest() {
   // Guardamos si es la primera vez ANTES de actualizar la variable
   const isFirstTime = personalBest === 0;
   const pbIcon = document.getElementById("complete-icon");
-  const mainElement = document.querySelector(".main");
-  const testCompleteSection = document.querySelector(".test-complete");
 
   // Remover todas las clases de estado
   mainElement.classList.remove("confetti");
@@ -482,7 +483,7 @@ function updateStats() {
 // Reiniciar test
 function restartTest() {
   // Remover confetti
-    document.querySelector(".main").classList.remove("confetti");
+  mainElement.classList.remove("confetti");
 
   // Detener temporizador
   if (timerInterval) {
