@@ -14,6 +14,7 @@ let personalBest = localStorage.getItem("typingPB") ? parseInt(localStorage.getI
 let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 let lastTapTime = 0;
 let tapCount = 0;
+let lastScrollLine = 0; // Para controlar cada cuántas líneas hacemos scroll
 
 // Elementos DOM
 const textInputEl = document.getElementById("text-input");
@@ -100,6 +101,9 @@ function setupMobileFunctionality() {
     textBox.style.overflowY = 'auto';
     textBox.style.WebkitOverflowScrolling = 'touch';
     textBox.style.padding = '10px 0';
+    // Evitar que palabras se corten
+    textBox.style.wordBreak = 'keep-all';
+    textBox.style.overflowWrap = 'break-word';
   }
 
   // Prevenir zoom en elementos interactivos
@@ -138,6 +142,7 @@ function centerCursorOnStart() {
   
   // Desplazar al inicio
   textBox.scrollTop = 0;
+  lastScrollLine = 0; // Reiniciar contador de líneas
   
   // Si hay un cursor, centrarlo después de un breve delay
   setTimeout(() => {
@@ -148,7 +153,30 @@ function centerCursorOnStart() {
   }, 100);
 }
 
-// Función para hacer scroll automático al cursor (móviles)
+// Calcular en qué línea está el cursor actualmente
+function getCurrentLine() {
+  if (!isMobile) return 0;
+  
+  const cursorElement = document.querySelector('.cursor');
+  if (!cursorElement) return 0;
+  
+  // Obtener posición vertical del cursor
+  const cursorRect = cursorElement.getBoundingClientRect();
+  const textBox = document.querySelector('.text-box');
+  if (!textBox) return 0;
+  
+  const textBoxRect = textBox.getBoundingClientRect();
+  const relativeTop = cursorRect.top - textBoxRect.top;
+  
+  // Calcular altura aproximada de una línea (usando el primer carácter como referencia)
+  const firstChar = document.querySelector('.char');
+  if (!firstChar) return 0;
+  
+  const charHeight = firstChar.offsetHeight || 40; // Altura aproximada de 40px por línea
+  return Math.floor(relativeTop / charHeight);
+}
+
+// Función para hacer scroll automático al cursor (móviles) - MEJORADA
 function scrollToCursor() {
   if (!isMobile) return; // Solo aplica para móviles
   
@@ -159,37 +187,65 @@ function scrollToCursor() {
   const textBox = document.querySelector('.text-box');
   if (!textBox) return;
   
-  // Calcular la posición del cursor relativa al contenedor
-  const cursorRect = cursorElement.getBoundingClientRect();
-  const textBoxRect = textBox.getBoundingClientRect();
+  // Calcular en qué línea está el cursor actualmente
+  const currentLine = getCurrentLine();
   
-  // Si el cursor está fuera de la vista visible
-  const cursorTop = cursorRect.top;
-  const textBoxTop = textBoxRect.top;
-  const textBoxBottom = textBoxRect.bottom;
-  
-  // Margen de seguridad (20px)
-  const margin = 20;
-  
-  // Si el cursor está cerca del borde inferior
-  if (cursorRect.bottom > (textBoxBottom - margin)) {
-    // Calcular cuánto necesitamos desplazar
-    const offset = cursorRect.bottom - textBoxBottom + margin;
-    textBox.scrollTop += offset;
-  }
-  // Si el cursor está cerca del borde superior
-  else if (cursorRect.top < (textBoxTop + margin)) {
-    const offset = textBoxTop + margin - cursorRect.top;
-    textBox.scrollTop -= offset;
+  // Verificar si hemos pasado 3 líneas desde el último scroll
+  if (currentLine >= lastScrollLine + 3) {
+    // Hacer scroll para mantener la línea actual en la parte superior
+    const cursorRect = cursorElement.getBoundingClientRect();
+    const textBoxRect = textBox.getBoundingClientRect();
+    
+    // Calcular el desplazamiento para colocar el cursor cerca de la parte superior
+    const desiredPosition = textBoxRect.top + 50; // 50px desde la parte superior
+    const offset = cursorRect.top - desiredPosition;
+    
+    // Aplicar scroll suave
+    if (offset > 0) {
+      textBox.scrollBy({
+        top: offset,
+        behavior: 'smooth'
+      });
+      
+      // Actualizar la última línea en la que hicimos scroll
+      lastScrollLine = currentLine;
+    }
+  } else {
+    // Método de respaldo para mantener el cursor visible en la pantalla
+    const cursorRect = cursorElement.getBoundingClientRect();
+    const textBoxRect = textBox.getBoundingClientRect();
+    
+    // Margen de seguridad (60px desde arriba, 40px desde abajo)
+    const topMargin = 60;
+    const bottomMargin = 40;
+    
+    // Si el cursor está cerca del borde inferior
+    if (cursorRect.bottom > (textBoxRect.bottom - bottomMargin)) {
+      // Calcular cuánto necesitamos desplazar
+      const offset = cursorRect.bottom - textBoxRect.bottom + bottomMargin;
+      textBox.scrollBy({
+        top: offset,
+        behavior: 'smooth'
+      });
+    }
+    // Si el cursor está cerca del borde superior
+    else if (cursorRect.top < (textBoxRect.top + topMargin)) {
+      const offset = textBoxRect.top + topMargin - cursorRect.top;
+      textBox.scrollBy({
+        top: -offset,
+        behavior: 'smooth'
+      });
+    }
   }
   
   // También desplazar la ventana si es necesario (para dispositivos muy pequeños)
   if (window.innerHeight < 600) {
+    const cursorRect = cursorElement.getBoundingClientRect();
     const cursorPosition = cursorRect.top;
     const windowHeight = window.innerHeight;
     
     // Si el cursor está en la mitad inferior de la pantalla
-    if (cursorPosition > windowHeight * 0.7) {
+    if (cursorPosition > windowHeight * 0.6) {
       const scrollAmount = cursorPosition - (windowHeight * 0.3);
       window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
     }
@@ -209,17 +265,24 @@ function setupMobileKeyboardInput() {
   mobileInput.style.userSelect = 'none';
   document.body.appendChild(mobileInput);
 
+  // Variable para controlar si el teclado ya está activo
+  let keyboardActive = false;
+
   // Cuando se toque el área de texto en móvil, enfocar el textarea
   textInputEl.addEventListener('touchstart', function(e) {
     if (!isTestActive && !isTestComplete) {
       startTest();
       setTimeout(() => {
-        mobileInput.focus();
-        mobileInput.value = '';
+        if (!keyboardActive) {
+          mobileInput.focus();
+          mobileInput.value = '';
+          keyboardActive = true;
+        }
       }, 100);
-    } else if (isTestActive) {
+    } else if (isTestActive && !keyboardActive) {
       mobileInput.focus();
       mobileInput.value = '';
+      keyboardActive = true;
     }
     e.preventDefault();
   });
@@ -230,17 +293,33 @@ function setupMobileKeyboardInput() {
   // Manejar keydown para backspace y espacio
   mobileInput.addEventListener('keydown', handleMobileKeyDown);
   
-  // Cuando se pierde el foco, limpiar el valor
+  // Cuando se pierde el foco, mantener el valor pero marcar como inactivo
   mobileInput.addEventListener('blur', function() {
-    this.value = '';
+    keyboardActive = false;
+    // NO limpiar el valor para evitar que el teclado se vuelva a abrir
+    // this.value = '';
+  });
+
+  // Evitar que el teclado se abra al hacer tap en otras partes de la pantalla
+  document.addEventListener('touchstart', function(e) {
+    if (isTestActive && isMobile) {
+      // Solo permitir que el teclado se abra al tocar el área de texto
+      if (!e.target.closest('#text-input') && !e.target.closest('#mobile-text-input')) {
+        if (mobileInput === document.activeElement) {
+          mobileInput.blur();
+          keyboardActive = false;
+        }
+      }
+    }
   });
 
   // También enfocar cuando se haga clic normalmente
   textInputEl.addEventListener('click', function() {
-    if (isTestActive && isMobile) {
+    if (isTestActive && isMobile && !keyboardActive) {
       setTimeout(() => {
         mobileInput.focus();
         mobileInput.value = '';
+        keyboardActive = true;
       }, 100);
     }
   });
@@ -548,6 +627,12 @@ function displayText() {
     charSpan.textContent = currentText[i];
     charSpan.className = "char";
     charSpan.id = `char-${i}`;
+    
+    // Añadir espacios no separables para evitar que palabras se corten
+    if (currentText[i] === ' ') {
+      charSpan.style.whiteSpace = 'nowrap';
+    }
+    
     textInputEl.appendChild(charSpan);
   }
 
@@ -606,6 +691,7 @@ function startTest() {
   correctCount = 0;
   incorrectCount = 0;
   userInput = "";
+  lastScrollLine = 0; // Reiniciar contador de líneas
 
   // Quitar blur del texto
   textInputEl.style.filter = "none";
@@ -731,22 +817,27 @@ function setupEventListeners() {
 
   // Manejar cambios en el teclado virtual (móviles)
   if (isMobile) {
-    // Manejar cambios en el teclado virtual
-    window.addEventListener('resize', function() {
-      if (isTestActive) {
-        setTimeout(scrollToCursor, 300);
-      }
-    });
-    
     // También desplazar cuando el teclado se abra/cierre
     let lastHeight = window.innerHeight;
     window.addEventListener('resize', function() {
       if (window.innerHeight < lastHeight && isTestActive) {
-        // Teclado probablemente se abrió
-        setTimeout(scrollToCursor, 500);
+        // Teclado probablemente se abrió - esperar un momento y luego hacer scroll
+        setTimeout(() => {
+          scrollToCursor();
+        }, 300);
       }
       lastHeight = window.innerHeight;
     });
+    
+    // Prevenir que el teclado se abra al tocar otras áreas
+    document.addEventListener('touchstart', function(e) {
+      if (isTestActive && !e.target.closest('#text-input')) {
+        const mobileInput = document.getElementById('mobile-text-input');
+        if (mobileInput && mobileInput === document.activeElement) {
+          mobileInput.blur();
+        }
+      }
+    }, true);
   }
 }
 
@@ -766,6 +857,7 @@ function endTest() {
     const mobileInput = document.getElementById('mobile-text-input');
     if (mobileInput) {
       mobileInput.blur();
+      // Limpiar valor solo al finalizar
       mobileInput.value = '';
     }
   }
@@ -873,6 +965,7 @@ function restartTest() {
   currentIndex = 0;
   correctCount = 0;
   incorrectCount = 0;
+  lastScrollLine = 0; // Reiniciar contador de líneas
 
   // En móviles, limpiar el textarea
   if (isMobile) {
