@@ -188,10 +188,10 @@ body {
 
 /* MAIN CONTENT > TEXT CONTAINER // HOME - NOT STARTED */
 
-.text-container,
 .text-row {
   width: 100%;
-  min-height: 560px;
+  /* min-height: 560px; */
+  min-height: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;

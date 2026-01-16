@@ -11,6 +11,9 @@ let currentDifficulty = "easy";
 let currentMode = "Timed (30s)";
 let isTestComplete = false;
 let personalBest = localStorage.getItem("typingPB") ? parseInt(localStorage.getItem("typingPB")) : 0;
+let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+let lastTapTime = 0;
+let tapCount = 0;
 
 // Elementos DOM
 const textInputEl = document.getElementById("text-input");
@@ -53,9 +56,54 @@ document.addEventListener("DOMContentLoaded", () => {
   // Configurar eventos
   setupEventListeners();
 
-  // reset record personal en localStorage
-  // localStorage.removeItem("typingPB");
+   // Reset record personal con doble tap en móviles
+  logo.addEventListener("click", handleLogoClick);
+
+  if (isMobile) {
+    logo.addEventListener("touchstart", handleLogoTouch, { passive: true });
+  }
 });
+
+// Manejar clic en logo solo en desktop
+function handleLogoClick() {
+  if (!isMobile || logo) {
+    if (confirm("¿Quieres reiniciar tu récord personal?")) {
+      resetPersonalBest();
+    }
+  }
+}
+
+// Manejar toque en logo (para móviles)
+function handleLogoTouch(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - lastTapTime;
+  
+  if (tapLength < 500 && tapLength > 0) {
+    // Doble tap detectado
+    tapCount++;
+    if (tapCount === 3) {
+      if (confirm("¿Quieres reiniciar tu récord personal?")) {
+        resetPersonalBest();
+      }
+      tapCount = 0;
+    }
+  } else {
+    tapCount = 1;
+  }
+  
+  lastTapTime = currentTime;
+}
+
+// Resetear record personal
+function resetPersonalBest() {
+  localStorage.removeItem("typingPB");
+  personalBest = 0;
+  updatePersonalBestDisplay();
+  alert("Récord personal reiniciado");
+}
 
 // Configurar record personal
 function updatePersonalBestDisplay() {
