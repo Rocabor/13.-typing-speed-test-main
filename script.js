@@ -12,9 +12,6 @@ let currentMode = "Timed (30s)";
 let isTestComplete = false;
 let personalBest = localStorage.getItem("typingPB") ? parseInt(localStorage.getItem("typingPB")) : 0;
 let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-let lastTapTime = 0;
-let tapCount = 0;
-let lastScrollLine = 0;
 
 // Elementos DOM
 const textInputEl = document.getElementById("text-input");
@@ -46,9 +43,6 @@ const modeOptions = dropdownMode.querySelectorAll(".select");
 
 // Inicialización
 document.addEventListener("DOMContentLoaded", () => {
-  console.log('=== TYPING TEST INICIALIZADO ===');
-  console.log('Es móvil:', isMobile);
-  
   updatePersonalBestDisplay();
   setupDropdowns();
   loadTextForDifficulty(currentDifficulty);
@@ -75,11 +69,9 @@ function setDefaultDisplayValues() {
 function setupMobileFunctionality() {
   if (!isMobile) return;
 
-  console.log('Configurando funcionalidad móvil...');
-
   const hintElement = document.querySelector(".hint");
   if (hintElement) {
-    hintElement.textContent = "Or tap the text and start typing";
+    hintElement.textContent = "Tap the text and start typing";
   }
 
   const textBox = document.querySelector('.text-box');
@@ -88,313 +80,138 @@ function setupMobileFunctionality() {
     textBox.style.overflowY = 'auto';
     textBox.style.WebkitOverflowScrolling = 'touch';
     textBox.style.padding = '10px 0';
-    textBox.style.wordBreak = 'keep-all';
-    textBox.style.overflowWrap = 'break-word';
-  }
-
-  // Prevenir zoom
-  document.addEventListener('touchstart', function(event) {
-    if (event.touches.length > 1) {
-      event.preventDefault();
-    }
-  }, { passive: false });
-
-  // Mejorar respuesta táctil
-  const touchElements = document.querySelectorAll('.btn-setting, .btn-start, .btn-restart, .btn-go-again, .select');
-  touchElements.forEach(el => {
-    el.style.cursor = 'pointer';
-    
-    el.addEventListener('touchstart', function() {
-      this.style.transform = 'scale(0.98)';
-      this.style.opacity = '0.9';
-    });
-    
-    el.addEventListener('touchend', function() {
-      this.style.transform = '';
-      this.style.opacity = '';
-    });
-  });
-
-  // Configurar teclado para móviles
-  setupMobileKeyboardInput();
-}
-
-// Función para centrar el cursor al inicio del test (móviles)
-function centerCursorOnStart() {
-  if (!isMobile) return;
-  
-  const textBox = document.querySelector('.text-box');
-  if (!textBox) return;
-  
-  textBox.scrollTop = 0;
-  
-  setTimeout(() => {
-    const cursorElement = document.querySelector('.cursor');
-    if (cursorElement && isTestActive) {
-      forceScrollToCursor();
-    }
-  }, 150);
-}
-
-// Calcular en qué línea está el cursor actualmente
-function getCurrentLine() {
-  if (!isMobile) return 0;
-  
-  const cursorElement = document.querySelector('.cursor');
-  if (!cursorElement) return 0;
-  
-  const cursorRect = cursorElement.getBoundingClientRect();
-  const textBox = document.querySelector('.text-box');
-  if (!textBox) return 0;
-  
-  const textBoxRect = textBox.getBoundingClientRect();
-  const relativeTop = cursorRect.top - textBoxRect.top;
-  
-  const chars = document.querySelectorAll('.char');
-  let lineHeight = 40;
-  
-  if (chars.length > 0) {
-    const firstCharRect = chars[0].getBoundingClientRect();
-    lineHeight = firstCharRect.height || 40;
-  }
-  
-  return Math.floor(relativeTop / lineHeight);
-}
-
-// Función para hacer scroll automático al cursor
-function scrollToCursor() {
-  if (!isMobile) return;
-  
-  const cursorElement = document.querySelector('.cursor');
-  if (!cursorElement) return;
-  
-  const textBox = document.querySelector('.text-box');
-  if (!textBox) return;
-  
-  const cursorRect = cursorElement.getBoundingClientRect();
-  const textBoxRect = textBox.getBoundingClientRect();
-  
-  const firstChar = document.querySelector('.char');
-  const lineHeight = firstChar ? firstChar.offsetHeight : 40;
-  
-  const cursorTopRelative = cursorRect.top - textBoxRect.top;
-  const cursorBottomRelative = cursorRect.bottom - textBoxRect.top;
-  
-  const desiredTopPosition = 20;
-  const scrollOffset = cursorTopRelative - desiredTopPosition;
-  
-  if (Math.abs(scrollOffset) > lineHeight / 2) {
-    textBox.scrollBy({
-      top: scrollOffset,
-      behavior: 'smooth'
-    });
-  }
-  
-  const cursorVisibleTop = cursorTopRelative >= 0;
-  const cursorVisibleBottom = cursorBottomRelative <= textBox.clientHeight;
-  
-  if (!cursorVisibleTop) {
-    textBox.scrollBy({
-      top: cursorTopRelative - 30,
-      behavior: 'smooth'
-    });
-  } else if (!cursorVisibleBottom) {
-    textBox.scrollBy({
-      top: cursorBottomRelative - textBox.clientHeight + 30,
-      behavior: 'smooth'
-    });
   }
 }
 
-// Función para forzar el scroll al cursor
-function forceScrollToCursor() {
-  if (!isMobile || !isTestActive) return;
-  
-  const cursorElement = document.querySelector('.cursor');
-  if (!cursorElement) return;
-  
-  const textBox = document.querySelector('.text-box');
-  if (!textBox) return;
-  
-  const cursorRect = cursorElement.getBoundingClientRect();
-  const textBoxRect = textBox.getBoundingClientRect();
-  
-  const cursorTopRelative = cursorRect.top - textBoxRect.top;
-  textBox.scrollTop += cursorTopRelative - 20;
-  
-  void textBox.offsetHeight;
-}
-
-// Configurar input de teclado para móviles - VERSIÓN SIMPLIFICADA Y FUNCIONAL
+// Configurar input de teclado para móviles - SOLUCIÓN SIMPLE
 function setupMobileKeyboardInput() {
   if (!isMobile) return;
   
-  console.log('Configurando teclado móvil...');
-  
-  // Crear textarea invisible
-  const mobileInput = document.createElement('textarea');
-  mobileInput.id = 'mobile-text-input';
+  // Crear un input REAL visible pero fuera de pantalla
+  const mobileInput = document.createElement('input');
+  mobileInput.type = 'text';
+  mobileInput.id = 'mobile-keyboard-input';
   mobileInput.style.position = 'fixed';
-  mobileInput.style.opacity = '0';
-  mobileInput.style.height = '0';
-  mobileInput.style.width = '0';
-  mobileInput.style.pointerEvents = 'none';
-  mobileInput.style.userSelect = 'none';
-  mobileInput.style.top = '0';
-  mobileInput.style.left = '0';
-  mobileInput.style.zIndex = '-1';
+  mobileInput.style.top = '10px';
+  mobileInput.style.left = '10px';
+  mobileInput.style.width = '50px';
+  mobileInput.style.height = '40px';
+  mobileInput.style.opacity = '0.01';
+  mobileInput.style.fontSize = '16px';
+  mobileInput.style.zIndex = '1000';
+  mobileInput.autocapitalize = 'none';
+  mobileInput.autocomplete = 'off';
+  mobileInput.autocorrect = 'off';
+  mobileInput.spellcheck = false;
   document.body.appendChild(mobileInput);
   
-  console.log('Input móvil creado:', mobileInput.id);
-
-  // Manejar input del teclado
-  mobileInput.addEventListener('input', handleMobileInput);
+  // Cuando el usuario toque el área de texto, enfocar este input
+  textInputEl.addEventListener('touchstart', function(e) {
+    if (isTestActive) {
+      e.preventDefault();
+      // Enfocar el input visible
+      setTimeout(() => {
+        mobileInput.focus();
+        mobileInput.value = '';
+      }, 50);
+    }
+  }, { passive: false });
+  
+  // También con click
+  textInputEl.addEventListener('click', function(e) {
+    if (isTestActive && isMobile) {
+      e.preventDefault();
+      setTimeout(() => {
+        mobileInput.focus();
+        mobileInput.value = '';
+      }, 50);
+    }
+  });
+  
+  // Capturar lo que escribe el usuario
+  mobileInput.addEventListener('input', function(e) {
+    if (!isTestActive || isTestComplete || !isMobile) return;
+    
+    const value = mobileInput.value;
+    if (value.length === 0) return;
+    
+    // Tomar el último carácter
+    const lastChar = value.charAt(value.length - 1);
+    
+    // Limpiar el input
+    mobileInput.value = '';
+    
+    // Procesar el carácter
+    processCharacter(lastChar);
+  });
   
   // Manejar teclas especiales
-  mobileInput.addEventListener('keydown', handleMobileKeyDown);
-  
-  // Cuando se pierde el foco
-  mobileInput.addEventListener('blur', function() {
-    console.log('Teclado perdió foco (blur event)');
-  });
-
-  // Solo el botón de reinicio puede hacer blur
-  restartBtn.addEventListener('touchstart', function() {
-    if (mobileInput === document.activeElement) {
-      mobileInput.blur();
+  mobileInput.addEventListener('keydown', function(e) {
+    if (!isTestActive || isTestComplete || !isMobile) return;
+    
+    if (e.key === 'Backspace' || e.key === ' ') {
+      e.preventDefault();
+      processCharacter(e.key);
+      mobileInput.value = '';
+    }
+    
+    if (e.key === 'Enter') {
+      e.preventDefault();
     }
   });
 }
 
-// Manejar input en móviles
-function handleMobileInput(e) {
-  if (!isTestActive || isTestComplete || !isMobile) return;
-  
-  const input = e.target.value;
-  if (!input || input.length === 0) return;
-  
-  const typedChar = input.charAt(input.length - 1);
-  e.target.value = '';
-  
-  processCharacter(typedChar);
-}
+// Configurar eventos
+function setupEventListeners() {
+  // Botón de inicio
+  startBtn.forEach((btn) => {
+    btn.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+      if (isMobile) e.preventDefault();
+      startTest();
+    });
+  });
 
-// Manejar keydown en móviles
-function handleMobileKeyDown(e) {
-  if (!isTestActive || isTestComplete || !isMobile) return;
-  
-  if (e.key === 'Backspace' || e.key === ' ') {
-    e.preventDefault();
-    processCharacter(e.key);
+  // Botón de reinicio
+  restartBtn.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+    if (isMobile) e.preventDefault();
+    restartTest();
+  });
+
+  // Botón de "ir de nuevo"
+  goAgainBtn.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+    if (isMobile) e.preventDefault();
+    testCompleteSection.style.display = "none";
+    mainContent.style.display = "flex";
+    restartTest();
+  });
+
+  // Eventos de teclado (solo desktop)
+  if (!isMobile) {
+    textInputEl.addEventListener("keydown", handleKeyDown);
+    textInputEl.addEventListener("keyup", handleKeyUp);
   }
   
-  if (e.key === 'Enter') {
-    e.preventDefault();
-  }
-}
-
-// Procesar carácter
-function processCharacter(typedChar) {
-  if (typedChar === 'Backspace') {
-    if (currentIndex > 0) {
-      currentIndex--;
-      userInput = userInput.slice(0, -1);
-
-      const prevCharEl = document.getElementById(`char-${currentIndex}`);
-      if (prevCharEl) {
-        prevCharEl.className = "char";
-
-        if (prevCharEl.classList.contains("incorrect")) {
-          incorrectCount--;
-        } else if (prevCharEl.classList.contains("correct")) {
-          correctCount--;
-        }
-      }
-
-      updateCursor();
-      
-      if (isMobile) {
-        setTimeout(() => {
-          scrollToCursor();
-        }, 50);
-      }
-      
-      updateStats();
-    }
-    return;
-  }
-
-  if (currentIndex >= currentText.length) {
-    if (currentMode === "Passage") {
-      endTest();
-    }
-    return;
-  }
-
-  const currentChar = currentText[currentIndex];
-  userInput += typedChar;
-
-  const charEl = document.getElementById(`char-${currentIndex}`);
-  if (!charEl) return;
-
-  const isCorrect = typedChar.toLowerCase() === currentChar.toLowerCase();
-  charEl.className = "char " + (isCorrect ? "correct" : "incorrect");
-
-  if (isCorrect) {
-    correctCount++;
-  } else {
-    incorrectCount++;
-  }
-
-  currentIndex++;
-  updateCursor();
-  
+  // Configurar teclado móvil SIEMPRE
   if (isMobile) {
-    setTimeout(() => {
-      scrollToCursor();
-    }, 50);
+    setupMobileKeyboardInput();
   }
 
-  updateStats();
-
-  if (currentMode === "Passage" && currentIndex >= currentText.length) {
-    endTest();
-  }
+  // Hacer clic en el texto para iniciar
+  textInputEl.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+    if (isMobile) e.preventDefault();
+    if (!isTestActive && !isTestComplete) {
+      startTest();
+    }
+  });
 }
 
 // Configurar eventos del logo
 function setupLogoEvents() {
-  if (isMobile) {
-    logo.addEventListener("touchstart", handleLogoTouch, { passive: true });
-    logo.addEventListener("click", (e) => e.preventDefault());
-  } else {
-    logo.addEventListener("click", () => {
-      if (confirm("¿Quieres reiniciar tu récord personal?")) {
-        resetPersonalBest();
-      }
-    });
-  }
-}
-
-// Manejar toque en logo
-function handleLogoTouch(e) {
-  const currentTime = new Date().getTime();
-  const tapLength = currentTime - lastTapTime;
-  
-  if (tapLength < 500 && tapLength > 0) {
-    tapCount++;
-    if (tapCount === 2) {
-      e.preventDefault();
-      if (confirm("¿Quieres reiniciar tu récord personal?")) {
-        resetPersonalBest();
-      }
-      tapCount = 0;
+  logo.addEventListener("click", () => {
+    if (confirm("¿Quieres reiniciar tu récord personal?")) {
+      resetPersonalBest();
     }
-  } else {
-    tapCount = 1;
-  }
-  
-  lastTapTime = currentTime;
+  });
 }
 
 // Resetear record personal
@@ -435,9 +252,7 @@ function setupDropdowns() {
     });
 
     options.forEach((option) => {
-      const eventType = isMobile ? 'touchstart' : 'click';
-      
-      option.addEventListener(eventType, (e) => {
+      option.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
         if (isMobile) e.preventDefault();
         e.stopPropagation();
         const value = option.getAttribute("data-value");
@@ -480,8 +295,7 @@ function setupDropdowns() {
     }
   });
 
-  const closeEvent = isMobile ? 'touchstart' : 'click';
-  document.addEventListener(closeEvent, (e) => {
+  document.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
     if (!e.target.closest('.dropdown-group')) {
       [difficultyMobileBtn, modeMobileBtn].forEach((btn) => {
         btn.setAttribute("aria-expanded", "false");
@@ -523,11 +337,6 @@ function displayText() {
     charSpan.textContent = currentText[i];
     charSpan.className = "char";
     charSpan.id = `char-${i}`;
-    
-    if (currentText[i] === ' ') {
-      charSpan.style.whiteSpace = 'nowrap';
-    }
-    
     textInputEl.appendChild(charSpan);
   }
 
@@ -546,12 +355,6 @@ function updateCursor() {
   const currentCharEl = document.getElementById(`char-${currentIndex}`);
   if (currentCharEl) {
     currentCharEl.classList.add("cursor");
-    
-    if (isMobile && isTestActive) {
-      setTimeout(() => {
-        scrollToCursor();
-      }, 10);
-    }
   }
 }
 
@@ -573,8 +376,6 @@ function updateTimeDisplay(time) {
 function startTest() {
   if (isTestActive || isTestComplete) return;
 
-  console.log('=== INICIANDO TEST ===');
-  
   isTestActive = true;
   isTestComplete = false;
   startTime = new Date();
@@ -582,28 +383,18 @@ function startTest() {
   correctCount = 0;
   incorrectCount = 0;
   userInput = "";
-  lastScrollLine = 0;
 
   // Quitar blur del texto
   textInputEl.style.filter = "none";
 
-  // Centrar cursor en móviles
+  // En móviles, activar el teclado automáticamente
   if (isMobile) {
-    centerCursorOnStart();
-  }
-
-  // Enfocar el área de texto (solo en desktop)
-  if (!isMobile) {
-    textInputEl.focus();
-  } else {
-    // En móviles, enfocar el textarea invisible
-    const mobileInput = document.getElementById('mobile-text-input');
+    const mobileInput = document.getElementById('mobile-keyboard-input');
     if (mobileInput) {
       setTimeout(() => {
         mobileInput.focus();
         mobileInput.value = '';
-        console.log('Teclado activado al inicio del test');
-      }, 100);
+      }, 300); // Delay para que el usuario vea que empezó
     }
   }
 
@@ -622,8 +413,6 @@ function startTest() {
   }
 
   startTimer(timeLimit);
-
-  // Iniciar actualización de estadísticas
   updateStats();
 }
 
@@ -661,124 +450,58 @@ function startTimer(timeLimit) {
   }, 1000);
 }
 
-// Configurar eventos - VERSIÓN SIMPLIFICADA Y FUNCIONAL
-function setupEventListeners() {
-  console.log('Configurando eventos...');
+// Procesar carácter
+function processCharacter(typedChar) {
+  if (typedChar === 'Backspace') {
+    if (currentIndex > 0) {
+      currentIndex--;
+      userInput = userInput.slice(0, -1);
 
-  // Botón de inicio
-  startBtn.forEach((btn) => {
-    const eventType = isMobile ? 'touchstart' : 'click';
-    btn.addEventListener(eventType, (e) => {
-      if (isMobile) e.preventDefault();
-      startTest();
-    });
-  });
+      const prevCharEl = document.getElementById(`char-${currentIndex}`);
+      if (prevCharEl) {
+        prevCharEl.className = "char";
 
-  // Botón de reinicio
-  restartBtn.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
-    if (isMobile) e.preventDefault();
-    restartTest();
-  });
-
-  // Botón de "ir de nuevo"
-  goAgainBtn.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
-    if (isMobile) e.preventDefault();
-    testCompleteSection.style.display = "none";
-    mainContent.style.display = "flex";
-    restartTest();
-  });
-
-  // Eventos de teclado (solo desktop)
-  if (!isMobile) {
-    textInputEl.addEventListener("keydown", handleKeyDown);
-    textInputEl.addEventListener("keyup", handleKeyUp);
-  }
-
-  // **EVENTO CRÍTICO: Reactivar teclado en móviles**
-  if (isMobile) {
-    // Evento principal para el área de texto
-    textInputEl.addEventListener('touchstart', function(e) {
-      console.log('Área de texto tocada - isTestActive:', isTestActive);
-      
-      if (isTestActive) {
-        // Prevenir comportamiento por defecto
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Obtener el input móvil
-        const mobileInput = document.getElementById('mobile-text-input');
-        if (mobileInput) {
-          console.log('Enfocando input móvil...');
-          
-          // Enfocar el input con retraso para mejor compatibilidad
-          setTimeout(() => {
-            mobileInput.focus();
-            mobileInput.value = '';
-            
-            // Verificar si se enfocó
-            setTimeout(() => {
-              if (document.activeElement !== mobileInput) {
-                console.log('Reintentando foco...');
-                mobileInput.focus();
-                mobileInput.value = '';
-                mobileInput.click(); // Método alternativo
-              }
-            }, 50);
-          }, 10);
+        if (prevCharEl.classList.contains("incorrect")) {
+          incorrectCount--;
+        } else if (prevCharEl.classList.contains("correct")) {
+          correctCount--;
         }
       }
-    }, { passive: false });
-    
-    // También con click (backup)
-    textInputEl.addEventListener('click', function(e) {
-      if (isTestActive) {
-        e.preventDefault();
-        const mobileInput = document.getElementById('mobile-text-input');
-        if (mobileInput) {
-          setTimeout(() => {
-            mobileInput.focus();
-            mobileInput.value = '';
-          }, 10);
-        }
-      }
-    });
-  }
 
-  // Hacer clic en el texto para iniciar (backup)
-  textInputEl.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
-    if (isMobile) e.preventDefault();
-    if (!isTestActive && !isTestComplete) {
-      startTest();
+      updateCursor();
+      updateStats();
     }
-  });
+    return;
+  }
 
-  // Permitir que el área de texto reciba foco
-  textInputEl.setAttribute("tabindex", "0");
+  if (currentIndex >= currentText.length) {
+    if (currentMode === "Passage") {
+      endTest();
+    }
+    return;
+  }
 
-  // Manejar cambios en el teclado (solo móviles)
-  if (isMobile) {
-    let lastHeight = window.innerHeight;
-    window.addEventListener('resize', function() {
-      if (window.innerHeight < lastHeight && isTestActive) {
-        // Teclado probablemente se abrió
-        setTimeout(() => {
-          forceScrollToCursor();
-        }, 300);
-      }
-      lastHeight = window.innerHeight;
-    });
-    
-    // Prevenir que otros elementos hagan blur automático
-    document.addEventListener('touchstart', function(e) {
-      // Solo hacer blur si se toca el botón de reinicio explícitamente
-      if (e.target.closest('.btn-restart')) {
-        const mobileInput = document.getElementById('mobile-text-input');
-        if (mobileInput && mobileInput === document.activeElement) {
-          mobileInput.blur();
-        }
-      }
-      // Para cualquier otro toque, NO hacer blur
-    }, { passive: true });
+  const currentChar = currentText[currentIndex];
+  userInput += typedChar;
+
+  const charEl = document.getElementById(`char-${currentIndex}`);
+  if (!charEl) return;
+
+  const isCorrect = typedChar.toLowerCase() === currentChar.toLowerCase();
+  charEl.className = "char " + (isCorrect ? "correct" : "incorrect");
+
+  if (isCorrect) {
+    correctCount++;
+  } else {
+    incorrectCount++;
+  }
+
+  currentIndex++;
+  updateCursor();
+  updateStats();
+
+  if (currentMode === "Passage" && currentIndex >= currentText.length) {
+    endTest();
   }
 }
 
@@ -786,8 +509,6 @@ function setupEventListeners() {
 function endTest() {
   isTestActive = false;
   isTestComplete = true;
-  
-  console.log('=== TEST FINALIZADO ===');
 
   // Detener temporizador
   if (timerInterval) {
@@ -795,37 +516,32 @@ function endTest() {
     timerInterval = null;
   }
 
-  // En móviles, quitar el foco del textarea
+  // En móviles, quitar el foco
   if (isMobile) {
-    const mobileInput = document.getElementById('mobile-text-input');
+    const mobileInput = document.getElementById('mobile-keyboard-input');
     if (mobileInput) {
       mobileInput.blur();
       mobileInput.value = '';
-      console.log('Teclado desactivado al finalizar test');
     }
   }
 
-  // Calcular tiempo transcurrido
+  // Calcular estadísticas
   const elapsedSeconds = (new Date() - startTime) / 1000;
   const elapsedMinutes = elapsedSeconds / 60;
-
-  // Calcular estadísticas finales
   const wordsTyped = correctCount / 5;
   const finalWPM = elapsedMinutes > 0 ? Math.round(wordsTyped / elapsedMinutes) : 0;
   const totalTyped = correctCount + incorrectCount;
   const finalAccuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 0;
 
-  // Actualizar UI de resultados
+  // Actualizar UI
   wpmCompleteEl.textContent = finalWPM;
   accuracyCompleteEl.textContent = `${finalAccuracy}%`;
   correctEl.textContent = correctCount;
   incorrectEl.textContent = incorrectCount;
 
-  // Guardamos si es la primera vez
   const isFirstTime = personalBest === 0;
   const pbIcon = document.getElementById("complete-icon");
 
-  // Remover todas las clases de estado
   mainElement.classList.remove("confetti");
   testCompleteSection.classList.remove("no-stars");
   pbIcon.classList.remove("new-pb-icon");
@@ -880,8 +596,6 @@ function updateStats() {
 
 // Reiniciar test
 function restartTest() {
-  console.log('=== REINICIANDO TEST ===');
-  
   mainElement.classList.remove("confetti");
 
   if (timerInterval) {
@@ -896,15 +610,13 @@ function restartTest() {
   currentIndex = 0;
   correctCount = 0;
   incorrectCount = 0;
-  lastScrollLine = 0;
 
-  // En móviles, limpiar el textarea
+  // En móviles
   if (isMobile) {
-    const mobileInput = document.getElementById('mobile-text-input');
+    const mobileInput = document.getElementById('mobile-keyboard-input');
     if (mobileInput) {
       mobileInput.blur();
       mobileInput.value = '';
-      console.log('Teclado desactivado al reiniciar');
     }
   }
 
@@ -912,7 +624,6 @@ function restartTest() {
   wpmEl.textContent = "---";
   accuracyEl.textContent = "---%";
 
-  // Resetear tiempo
   if (currentMode === "Timed (30s)") {
     timeEl.textContent = "0:30";
   } else if (currentMode === "Timed (60s)") {
@@ -928,11 +639,11 @@ function restartTest() {
   // Cargar nuevo texto
   loadTextForDifficulty(currentDifficulty);
 
-  // Asegurarse de que el texto esté borroso
+  // Blur el texto
   textInputEl.style.filter = "blur(16px)";
 }
 
-// Manejar teclado (solo para desktop)
+// Manejar teclado desktop
 function handleKeyDown(e) {
   if (!isTestActive || isTestComplete) return;
 
@@ -951,7 +662,6 @@ function handleKeyDown(e) {
   }
 }
 
-// Manejar teclado (solo para desktop)
 function handleKeyUp(e) {
   if (!isTestActive || isTestComplete) return;
 
@@ -960,23 +670,27 @@ function handleKeyUp(e) {
   processCharacter(e.key);
 }
 
-// **SOLUCIÓN DE EMERGENCIA PARA MÓVILES - GARANTIZADO FUNCIONAL**
+// SOLUCIÓN DEFINITIVA PARA MÓVILES
 if (isMobile) {
-  console.log('=== ACTIVANDO SOLUCIÓN DE EMERGENCIA PARA MÓVILES ===');
+  // Crear un overlay invisible que captura todos los toques en el área de texto
+  const keyboardOverlay = document.createElement('div');
+  keyboardOverlay.id = 'keyboard-overlay';
+  keyboardOverlay.style.position = 'absolute';
+  keyboardOverlay.style.top = '0';
+  keyboardOverlay.style.left = '0';
+  keyboardOverlay.style.width = '100%';
+  keyboardOverlay.style.height = '100%';
+  keyboardOverlay.style.zIndex = '10';
+  keyboardOverlay.style.background = 'transparent';
   
-  // Sobrescribir completamente el evento del área de texto
-  const originalAddEventListener = textInputEl.addEventListener;
-  textInputEl.addEventListener = function(type, listener, options) {
-    if (type === 'touchstart' || type === 'click') {
-      // No hacer nada - vamos a manejar esto de forma especial
-      return;
-    }
-    return originalAddEventListener.call(this, type, listener, options);
-  };
+  // Insertar el overlay dentro del área de texto
+  textInputEl.style.position = 'relative';
+  textInputEl.appendChild(keyboardOverlay);
   
-  // Nuestro propio handler garantizado
-  textInputEl.addEventListener('touchstart', function(e) {
-    console.log('=== HANDLER DE EMERGENCIA ACTIVADO ===');
+  // Handler para el overlay
+  keyboardOverlay.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
     
     if (!isTestActive && !isTestComplete) {
       startTest();
@@ -984,77 +698,50 @@ if (isMobile) {
     }
     
     if (isTestActive) {
-      // 1. Prevenir TODO
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      e.stopPropagation();
-      
-      // 2. Obtener o crear input
-      let mobileInput = document.getElementById('mobile-text-input');
-      
-      if (!mobileInput) {
-        console.log('Creando input móvil de emergencia...');
-        mobileInput = document.createElement('textarea');
-        mobileInput.id = 'mobile-text-input';
-        mobileInput.style.position = 'fixed';
-        mobileInput.style.opacity = '0';
-        mobileInput.style.height = '1px';
-        mobileInput.style.width = '1px';
-        mobileInput.style.top = '0';
-        mobileInput.style.left = '0';
-        mobileInput.style.zIndex = '9999';
-        document.body.appendChild(mobileInput);
-        
-        // Configurar eventos
-        mobileInput.addEventListener('input', handleMobileInput);
-        mobileInput.addEventListener('keydown', handleMobileKeyDown);
-      }
-      
-      // 3. Forzar foco con múltiples métodos
-      console.log('Forzando foco del teclado...');
-      
-      // Método 1: focus() directo
-      mobileInput.focus();
-      mobileInput.value = '';
-      
-      // Método 2: click() también
-      setTimeout(() => {
-        mobileInput.click();
-      }, 10);
-      
-      // Método 3: Seleccionar contenido
-      setTimeout(() => {
-        mobileInput.select();
-      }, 20);
-      
-      // Método 4: Verificar y reintentar
-      setTimeout(() => {
-        if (document.activeElement !== mobileInput) {
-          console.log('Reintentando foco...');
-          mobileInput.focus();
-          mobileInput.value = '';
-          mobileInput.click();
-        }
-      }, 50);
-      
-      // 4. Hacer scroll al cursor
-      setTimeout(() => {
-        forceScrollToCursor();
-      }, 100);
-      
-      return false;
-    }
-  }, true);
-  
-  // Prevenir que cualquier otro elemento interfiera
-  document.addEventListener('touchstart', function(e) {
-    // Solo permitir blur en botón de reinicio
-    if (e.target.closest('.btn-restart')) {
-      const mobileInput = document.getElementById('mobile-text-input');
+      const mobileInput = document.getElementById('mobile-keyboard-input');
       if (mobileInput) {
-        mobileInput.blur();
+        // Forzar el foco de múltiples maneras
+        setTimeout(() => {
+          mobileInput.focus();
+          mobileInput.click();
+          mobileInput.value = '';
+        }, 10);
+        
+        setTimeout(() => {
+          if (document.activeElement !== mobileInput) {
+            mobileInput.focus();
+            mobileInput.click();
+          }
+        }, 100);
       }
     }
-    // Para TODO lo demás, prevenir blur
-  }, true);
+  }, { passive: false });
+  
+  // Ocultar el overlay cuando no se necesita
+  function updateOverlayVisibility() {
+    if (isTestActive) {
+      keyboardOverlay.style.display = 'block';
+    } else {
+      keyboardOverlay.style.display = 'none';
+    }
+  }
+  
+  // Actualizar visibilidad al cambiar estados
+  const originalStartTest = startTest;
+  startTest = function() {
+    originalStartTest();
+    updateOverlayVisibility();
+  };
+  
+  const originalRestartTest = restartTest;
+  restartTest = function() {
+    originalRestartTest();
+    updateOverlayVisibility();
+  };
+  
+  const originalEndTest = endTest;
+  endTest = function() {
+    originalEndTest();
+    updateOverlayVisibility();
+  };
 }
