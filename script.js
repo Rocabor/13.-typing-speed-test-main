@@ -277,6 +277,7 @@ function setupMobileKeyboardInput() {
 
   // Variable para controlar si el teclado ya está activo
   let keyboardActive = false;
+  let keyboardWasVisible = false;
 
   // Cuando se toque el área de texto en móvil, enfocar el textarea
   textInputEl.addEventListener('touchstart', function(e) {
@@ -287,24 +288,15 @@ function setupMobileKeyboardInput() {
           mobileInput.focus();
           mobileInput.value = '';
           keyboardActive = true;
-          console.log('Teclado activado (inicio test)');
         }
       }, 100);
-    } else if (isTestActive && !keyboardActive) {
-      // Test activo pero teclado no activo - activarlo
+    } else if (isTestActive) {
+      // IMPORTANTE: Siempre enfocar cuando se toca el texto durante el test
       setTimeout(() => {
         mobileInput.focus();
         mobileInput.value = '';
         keyboardActive = true;
-        console.log('Teclado activado (tap en texto)');
-      }, 100);
-    } else if (isTestActive && keyboardActive) {
-      // Test activo y teclado ya estaba activo - mantener el foco
-      setTimeout(() => {
-        if (document.activeElement !== mobileInput) {
-          mobileInput.focus();
-          console.log('Teclado reactivado (mantener foco)');
-        }
+        keyboardWasVisible = true;
       }, 100);
     }
     e.preventDefault();
@@ -316,34 +308,24 @@ function setupMobileKeyboardInput() {
   // Manejar keydown para backspace y espacio
   mobileInput.addEventListener('keydown', handleMobileKeyDown);
   
-  // Cuando se pierde el foco, marcar como inactivo pero NO limpiar valor
+  // Cuando se pierde el foco
   mobileInput.addEventListener('blur', function() {
     keyboardActive = false;
-    console.log('Teclado desactivado (blur)');
-    // NO limpiar el valor aquí para evitar que el teclado se abra automáticamente
   });
 
   // También enfocar cuando se haga clic normalmente
   textInputEl.addEventListener('click', function() {
-    if (isTestActive && isMobile && !keyboardActive) {
+    if (isTestActive && isMobile) {
       setTimeout(() => {
         mobileInput.focus();
         mobileInput.value = '';
         keyboardActive = true;
-        console.log('Teclado activado (click)');
-      }, 100);
-    } else if (isTestActive && isMobile && keyboardActive) {
-      // Si ya está activo, mantener el foco
-      setTimeout(() => {
-        if (document.activeElement !== mobileInput) {
-          mobileInput.focus();
-          console.log('Teclado mantenido activo (click)');
-        }
+        keyboardWasVisible = true;
       }, 100);
     }
   });
 
-  // NUEVA FUNCIONALIDAD: Detectar cuando el teclado se oculta y permitir reactivarlo
+  // NUEVA FUNCIONALIDAD: Detectar cuando el teclado se oculta
   setupKeyboardVisibilityDetection(mobileInput);
 }
 
@@ -352,45 +334,18 @@ function setupKeyboardVisibilityDetection(mobileInput) {
   if (!isMobile) return;
   
   let lastWindowHeight = window.innerHeight;
-  let keyboardWasVisible = false;
   
   // Detectar cambios en el tamaño de la ventana (indica teclado apareciendo/desapareciendo)
   window.addEventListener('resize', function() {
     const currentHeight = window.innerHeight;
     
-    // Si la altura disminuyó, el teclado probablemente apareció
-    if (currentHeight < lastWindowHeight) {
-      keyboardWasVisible = true;
-      console.log('Teclado probablemente visible');
-      
-      // Hacer scroll para ajustar la vista
-      if (isTestActive) {
-        setTimeout(() => {
-          forceScrollToCursor();
-        }, 300);
-      }
-    }
     // Si la altura aumentó, el teclado probablemente desapareció
-    else if (currentHeight > lastWindowHeight && keyboardWasVisible) {
-      keyboardWasVisible = false;
-      console.log('Teclado probablemente oculto');
-      
-      // No hacemos nada aquí - el usuario deberá tocar para reactivar
+    if (currentHeight > lastWindowHeight && isTestActive) {
+      // Teclado se ocultó - no hacemos nada, el usuario deberá tocar para reactivar
+      console.log('Teclado ocultado por el sistema');
     }
     
     lastWindowHeight = currentHeight;
-  });
-  
-  // Detectar cuando el usuario toque fuera del área de texto (podría ocultar teclado)
-  document.addEventListener('touchstart', function(e) {
-    // Si el test está activo y el usuario toca fuera del área de texto
-    if (isTestActive && !e.target.closest('#text-input') && !e.target.closest('.btn-restart')) {
-      // Si el teclado está activo pero el usuario toca fuera, podría estar intentando ocultarlo
-      if (mobileInput === document.activeElement) {
-        console.log('Usuario tocó fuera del área de texto - teclado podría ocultarse');
-        // No hacemos blur aquí - dejamos que el sistema maneje esto
-      }
-    }
   });
 }
 
@@ -788,7 +743,6 @@ function startTest() {
       setTimeout(() => {
         mobileInput.focus();
         mobileInput.value = '';
-        console.log('Teclado activado al inicio del test');
       }, 100);
     }
   }
@@ -883,14 +837,16 @@ function setupEventListeners() {
   }
 
   // Hacer clic en el texto para iniciar
-  textInputEl.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+  textInputEl.addEventListener(isMobile ? 'touchstart' : 'click', function(e) {
     if (isMobile) e.preventDefault();
+    
     if (!isTestActive && !isTestComplete) {
       startTest();
     } else if (isTestActive && isMobile) {
-      // NUEVO: Si el test está activo y es móvil, reactivar el teclado si está oculto
+      // **IMPORTANTE: Reactivar teclado si está oculto**
       const mobileInput = document.getElementById('mobile-text-input');
-      if (mobileInput && document.activeElement !== mobileInput) {
+      if (mobileInput) {
+        // Pequeño delay para mejor experiencia
         setTimeout(() => {
           mobileInput.focus();
           mobileInput.value = '';
@@ -903,7 +859,7 @@ function setupEventListeners() {
   // Permitir que el área de texto reciba foco
   textInputEl.setAttribute("tabindex", "0");
 
-  // Manejar cambios en el teclado virtual (móviles)
+  // **CORREGIDO: No hacer blur automáticamente cuando se toca fuera**
   if (isMobile) {
     // También desplazar cuando el teclado se abra/cierre
     let lastHeight = window.innerHeight;
@@ -917,17 +873,21 @@ function setupEventListeners() {
       lastHeight = window.innerHeight;
     });
     
-    // Prevenir que el teclado se abra al tocar otras áreas
+    // **MODIFICADO: Solo hacer blur si se tocan elementos específicos**
     document.addEventListener('touchstart', function(e) {
-      if (isTestActive && !e.target.closest('#text-input')) {
-        // Permitir que el botón de reinicio no active el teclado
-        if (!e.target.closest('.btn-restart')) {
+      if (isTestActive) {
+        const target = e.target;
+        
+        // Solo hacer blur si se toca el botón de reinicio u otros controles
+        if (target.closest('.btn-restart') || 
+            target.closest('.dropdown-group') ||
+            target.closest('#logo')) {
           const mobileInput = document.getElementById('mobile-text-input');
           if (mobileInput && mobileInput === document.activeElement) {
             mobileInput.blur();
-            console.log('Teclado desactivado al tocar fuera');
           }
         }
+        // **NO hacer blur si se toca fuera en general**
       }
     }, true);
   }
@@ -951,7 +911,6 @@ function endTest() {
       mobileInput.blur();
       // Limpiar valor solo al finalizar
       mobileInput.value = '';
-      console.log('Teclado desactivado al finalizar test');
     }
   }
 
@@ -1066,7 +1025,6 @@ function restartTest() {
     if (mobileInput) {
       mobileInput.blur();
       mobileInput.value = '';
-      console.log('Teclado desactivado al reiniciar test');
     }
   }
 
