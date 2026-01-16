@@ -59,7 +59,204 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Configurar eventos del logo
   setupLogoEvents();
+
+  // Configurar funcionalidad móvil
+  setupMobileFunctionality();
 });
+
+// Configurar funcionalidad móvil
+function setupMobileFunctionality() {
+  if (!isMobile) return;
+
+  // Cambiar texto del hint para móviles
+  const hintElement = document.querySelector(".hint");
+  if (hintElement) {
+    hintElement.textContent = "Or tap the text and start typing";
+  }
+
+  // Prevenir zoom en elementos interactivos
+  document.addEventListener('touchstart', function(event) {
+    if (event.touches.length > 1) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+
+  // Mejorar la respuesta táctil en botones
+  const touchElements = document.querySelectorAll('.btn-setting, .btn-start, .btn-restart, .btn-go-again, .select');
+  touchElements.forEach(el => {
+    el.style.cursor = 'pointer';
+    
+    el.addEventListener('touchstart', function() {
+      this.style.transform = 'scale(0.98)';
+      this.style.opacity = '0.9';
+    });
+    
+    el.addEventListener('touchend', function() {
+      this.style.transform = '';
+      this.style.opacity = '';
+    });
+  });
+
+  // Para móviles: configurar textarea invisible para capturar teclas
+  setupMobileKeyboardInput();
+}
+
+// Configurar input de teclado para móviles
+function setupMobileKeyboardInput() {
+  // Crear textarea invisible para capturar input en móviles
+  const mobileInput = document.createElement('textarea');
+  mobileInput.id = 'mobile-text-input';
+  mobileInput.style.position = 'absolute';
+  mobileInput.style.opacity = '0';
+  mobileInput.style.height = '0';
+  mobileInput.style.width = '0';
+  mobileInput.style.pointerEvents = 'none';
+  mobileInput.style.userSelect = 'none';
+  mobileInput.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(mobileInput);
+
+  // Cuando se toque el área de texto en móvil, enfocar el textarea
+  textInputEl.addEventListener('touchstart', function(e) {
+    if (!isTestActive && !isTestComplete) {
+      startTest();
+      setTimeout(() => {
+        mobileInput.focus();
+        mobileInput.value = '';
+      }, 100);
+    } else if (isTestActive) {
+      mobileInput.focus();
+      mobileInput.value = '';
+    }
+    e.preventDefault();
+  });
+
+  // Manejar input del textarea
+  mobileInput.addEventListener('input', handleMobileInput);
+  
+  // Manejar keydown para backspace y espacio
+  mobileInput.addEventListener('keydown', handleMobileKeyDown);
+  
+  // Cuando se pierde el foco, limpiar el valor
+  mobileInput.addEventListener('blur', function() {
+    this.value = '';
+  });
+
+  // También enfocar cuando se haga clic normalmente
+  textInputEl.addEventListener('click', function() {
+    if (isTestActive && isMobile) {
+      setTimeout(() => {
+        mobileInput.focus();
+        mobileInput.value = '';
+      }, 100);
+    }
+  });
+}
+
+// Manejar input en móviles
+function handleMobileInput(e) {
+  if (!isTestActive || isTestComplete || !isMobile) return;
+  
+  const input = e.target.value;
+  if (!input || input.length === 0) return;
+  
+  // Obtener el último carácter ingresado
+  const typedChar = input.charAt(input.length - 1);
+  
+  // Limpiar el input para el siguiente carácter
+  e.target.value = '';
+  
+  // Procesar el carácter como si fuera una tecla normal
+  processCharacter(typedChar);
+}
+
+// Manejar keydown en móviles (para backspace y espacio)
+function handleMobileKeyDown(e) {
+  if (!isTestActive || isTestComplete || !isMobile) return;
+  
+  if (e.key === 'Backspace' || e.key === ' ') {
+    e.preventDefault();
+    processCharacter(e.key);
+  }
+  
+  // Prevenir Enter
+  if (e.key === 'Enter') {
+    e.preventDefault();
+  }
+}
+
+// Procesar carácter (función común para desktop y móvil)
+function processCharacter(typedChar) {
+  if (typedChar === 'Backspace') {
+    if (currentIndex > 0) {
+      currentIndex--;
+
+      // Remover el último carácter del input
+      userInput = userInput.slice(0, -1);
+
+      // Restaurar estado del carácter anterior
+      const prevCharEl = document.getElementById(`char-${currentIndex}`);
+      if (prevCharEl) {
+        prevCharEl.className = "char";
+
+        // Restar del conteo si estaba incorrecto
+        if (prevCharEl.classList.contains("incorrect")) {
+          incorrectCount--;
+        } else if (prevCharEl.classList.contains("correct")) {
+          correctCount--;
+        }
+      }
+
+      updateCursor();
+      updateStats();
+    }
+    return;
+  }
+
+  // Si llegamos al final del texto
+  if (currentIndex >= currentText.length) {
+    if (currentMode === "Passage") {
+      endTest();
+    }
+    return;
+  }
+
+  // Obtener el carácter actual
+  const currentChar = currentText[currentIndex];
+
+  // Agregar al input del usuario
+  userInput += typedChar;
+
+  // Obtener elemento del carácter
+  const charEl = document.getElementById(`char-${currentIndex}`);
+  if (!charEl) return;
+
+  // Verificar si es correcto (comparación insensible a mayúsculas para móviles)
+  const isCorrect = typedChar.toLowerCase() === currentChar.toLowerCase();
+
+  // Actualizar clases
+  charEl.className = "char " + (isCorrect ? "correct" : "incorrect");
+
+  // Actualizar conteos
+  if (isCorrect) {
+    correctCount++;
+  } else {
+    incorrectCount++;
+  }
+
+  // Mover al siguiente carácter
+  currentIndex++;
+
+  // Actualizar cursor
+  updateCursor();
+
+  // Actualizar estadísticas
+  updateStats();
+
+  // Verificar si se completó en modo Passage
+  if (currentMode === "Passage" && currentIndex >= currentText.length) {
+    endTest();
+  }
+}
 
 // Configurar eventos del logo
 function setupLogoEvents() {
@@ -86,6 +283,7 @@ function handleLogoTouch(e) {
     // Doble tap detectado
     tapCount++;
     if (tapCount === 2) { // Cambiado de 3 a 2 para doble tap
+      e.preventDefault();
       if (confirm("¿Quieres reiniciar tu récord personal?")) {
         resetPersonalBest();
       }
@@ -143,7 +341,11 @@ function setupDropdowns() {
 
     // Manejar selección de opciones
     options.forEach((option) => {
-      option.addEventListener("click", (e) => {
+      // Para móviles, usar touch events
+      const eventType = isMobile ? 'touchstart' : 'click';
+      
+      option.addEventListener(eventType, (e) => {
+        if (isMobile) e.preventDefault();
         e.stopPropagation();
         const value = option.getAttribute("data-value");
 
@@ -193,14 +395,17 @@ function setupDropdowns() {
   });
 
   // Cerrar dropdowns al hacer clic fuera
-  document.addEventListener("click", () => {
-    [difficultyMobileBtn, modeMobileBtn].forEach((btn) => {
-      btn.setAttribute("aria-expanded", "false");
-      btn.querySelector(".arrow").style.transform = "rotate(0deg)";
-    });
-    [dropdownDifficulty, dropdownMode].forEach((dw) => {
-      dw.style.display = "none";
-    });
+  const closeEvent = isMobile ? 'touchstart' : 'click';
+  document.addEventListener(closeEvent, (e) => {
+    if (!e.target.closest('.dropdown-group')) {
+      [difficultyMobileBtn, modeMobileBtn].forEach((btn) => {
+        btn.setAttribute("aria-expanded", "false");
+        btn.querySelector(".arrow").style.transform = "rotate(0deg)";
+      });
+      [dropdownDifficulty, dropdownMode].forEach((dw) => {
+        dw.style.display = "none";
+      });
+    }
   });
 }
 
@@ -293,8 +498,19 @@ function startTest() {
   // Quitar blur del texto
   textInputEl.style.filter = "none";
 
-  // Enfocar el área de texto
-  textInputEl.focus();
+  // Enfocar el área de texto (solo en desktop)
+  if (!isMobile) {
+    textInputEl.focus();
+  } else {
+    // En móviles, enfocar el textarea invisible
+    const mobileInput = document.getElementById('mobile-text-input');
+    if (mobileInput) {
+      setTimeout(() => {
+        mobileInput.focus();
+        mobileInput.value = '';
+      }, 100);
+    }
+  }
 
   // Ocultar controles de inicio
   document.querySelector(".test-controls").style.display = "none";
@@ -358,25 +574,36 @@ function startTimer(timeLimit) {
 function setupEventListeners() {
   // Botón de inicio
   startBtn.forEach((btn) => {
-    btn.addEventListener("click", startTest);
+    const eventType = isMobile ? 'touchstart' : 'click';
+    btn.addEventListener(eventType, (e) => {
+      if (isMobile) e.preventDefault();
+      startTest();
+    });
   });
 
   // Botón de reinicio
-  restartBtn.addEventListener("click", restartTest);
+  restartBtn.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+    if (isMobile) e.preventDefault();
+    restartTest();
+  });
 
   // Botón de "ir de nuevo"
-  goAgainBtn.addEventListener("click", () => {
+  goAgainBtn.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+    if (isMobile) e.preventDefault();
     testCompleteSection.style.display = "none";
     mainContent.style.display = "flex";
     restartTest();
   });
 
-  // Eventos de teclado en el área de texto
-  textInputEl.addEventListener("keydown", handleKeyDown);
-  textInputEl.addEventListener("keyup", handleKeyUp);
+  // Eventos de teclado en el área de texto (solo desktop)
+  if (!isMobile) {
+    textInputEl.addEventListener("keydown", handleKeyDown);
+    textInputEl.addEventListener("keyup", handleKeyUp);
+  }
 
   // Hacer clic en el texto para iniciar
-  textInputEl.addEventListener("click", () => {
+  textInputEl.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+    if (isMobile) e.preventDefault();
     if (!isTestActive && !isTestComplete) {
       startTest();
     }
@@ -395,6 +622,15 @@ function endTest() {
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
+  }
+
+  // En móviles, quitar el foco del textarea
+  if (isMobile) {
+    const mobileInput = document.getElementById('mobile-text-input');
+    if (mobileInput) {
+      mobileInput.blur();
+      mobileInput.value = '';
+    }
   }
 
   // Calcular tiempo transcurrido en minutos
@@ -500,6 +736,15 @@ function restartTest() {
   correctCount = 0;
   incorrectCount = 0;
 
+  // En móviles, limpiar el textarea
+  if (isMobile) {
+    const mobileInput = document.getElementById('mobile-text-input');
+    if (mobileInput) {
+      mobileInput.blur();
+      mobileInput.value = '';
+    }
+  }
+
   // Resetear estadísticas en tiempo real
   wpmEl.textContent = "---";
   accuracyEl.textContent = "---%";
@@ -526,7 +771,7 @@ function restartTest() {
   textInputEl.style.filter = "blur(16px)";
 }
 
-// Manejar teclado
+// Manejar teclado (solo para desktop)
 function handleKeyDown(e) {
   if (!isTestActive || isTestComplete) return;
 
@@ -549,82 +794,13 @@ function handleKeyDown(e) {
   }
 }
 
-// Manejar teclado
+// Manejar teclado (solo para desktop)
 function handleKeyUp(e) {
   if (!isTestActive || isTestComplete) return;
 
   // Ignorar teclas especiales excepto espacio y backspace
   if (e.key.length > 1 && e.key !== " " && e.key !== "Backspace") return;
 
-  if (e.key === "Backspace") {
-    if (currentIndex > 0) {
-      currentIndex--;
-
-      // Remover el último carácter del input
-      userInput = userInput.slice(0, -1);
-
-      // Restaurar estado del carácter anterior
-      const prevCharEl = document.getElementById(`char-${currentIndex}`);
-      if (prevCharEl) {
-        prevCharEl.className = "char";
-
-        // Restar del conteo si estaba incorrecto
-        if (prevCharEl.classList.contains("incorrect")) {
-          incorrectCount--;
-        } else if (prevCharEl.classList.contains("correct")) {
-          correctCount--;
-        }
-      }
-
-      updateCursor();
-      updateStats();
-    }
-    return;
-  }
-
-  // Si llegamos al final del texto
-  if (currentIndex >= currentText.length) {
-    if (currentMode === "Passage") {
-      endTest();
-    }
-    return;
-  }
-
-  // Obtener el carácter actual
-  const currentChar = currentText[currentIndex];
-  const typedChar = e.key;
-
-  // Agregar al input del usuario
-  userInput += typedChar;
-
-  // Obtener elemento del carácter
-  const charEl = document.getElementById(`char-${currentIndex}`);
-  if (!charEl) return;
-
-  // Verificar si es correcto
-  const isCorrect = typedChar === currentChar;
-
-  // Actualizar clases
-  charEl.className = "char " + (isCorrect ? "correct" : "incorrect");
-
-  // Actualizar conteos
-  if (isCorrect) {
-    correctCount++;
-  } else {
-    incorrectCount++;
-  }
-
-  // Mover al siguiente carácter
-  currentIndex++;
-
-  // Actualizar cursor
-  updateCursor();
-
-  // Actualizar estadísticas
-  updateStats();
-
-  // Verificar si se completó en modo Passage
-  if (currentMode === "Passage" && currentIndex >= currentText.length) {
-    endTest();
-  }
+  // Usar la función común para procesar caracteres
+  processCharacter(e.key);
 }
