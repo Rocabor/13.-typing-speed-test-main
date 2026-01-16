@@ -142,15 +142,15 @@ function centerCursorOnStart() {
   
   // Desplazar al inicio
   textBox.scrollTop = 0;
-  lastScrollLine = 0; // Reiniciar contador de líneas
   
   // Si hay un cursor, centrarlo después de un breve delay
   setTimeout(() => {
     const cursorElement = document.querySelector('.cursor');
     if (cursorElement && isTestActive) {
-      scrollToCursor();
+      // Usar forceScrollToCursor para mayor precisión
+      forceScrollToCursor();
     }
-  }, 100);
+  }, 150); // Aumentar delay para asegurar que todo está listo
 }
 
 // Calcular en qué línea está el cursor actualmente
@@ -168,12 +168,16 @@ function getCurrentLine() {
   const textBoxRect = textBox.getBoundingClientRect();
   const relativeTop = cursorRect.top - textBoxRect.top;
   
-  // Calcular altura aproximada de una línea (usando el primer carácter como referencia)
-  const firstChar = document.querySelector('.char');
-  if (!firstChar) return 0;
+  // Calcular altura exacta de línea usando el primer carácter visible
+  const chars = document.querySelectorAll('.char');
+  let lineHeight = 40; // Valor por defecto
   
-  const charHeight = firstChar.offsetHeight || 40; // Altura aproximada de 40px por línea
-  return Math.floor(relativeTop / charHeight);
+  if (chars.length > 0) {
+    const firstCharRect = chars[0].getBoundingClientRect();
+    lineHeight = firstCharRect.height || 40;
+  }
+  
+  return Math.floor(relativeTop / lineHeight);
 }
 
 // Función para hacer scroll automático al cursor (móviles) - MEJORADA
@@ -187,69 +191,75 @@ function scrollToCursor() {
   const textBox = document.querySelector('.text-box');
   if (!textBox) return;
   
-  // Calcular en qué línea está el cursor actualmente
-  const currentLine = getCurrentLine();
+  // Obtener la posición vertical del cursor
+  const cursorRect = cursorElement.getBoundingClientRect();
+  const textBoxRect = textBox.getBoundingClientRect();
   
-  // Verificar si hemos pasado 3 líneas desde el último scroll
-  if (currentLine >= lastScrollLine + 3) {
-    // Hacer scroll para mantener la línea actual en la parte superior
-    const cursorRect = cursorElement.getBoundingClientRect();
-    const textBoxRect = textBox.getBoundingClientRect();
-    
-    // Calcular el desplazamiento para colocar el cursor cerca de la parte superior
-    const desiredPosition = textBoxRect.top + 50; // 50px desde la parte superior
-    const offset = cursorRect.top - desiredPosition;
-    
-    // Aplicar scroll suave
-    if (offset > 0) {
-      textBox.scrollBy({
-        top: offset,
-        behavior: 'smooth'
-      });
-      
-      // Actualizar la última línea en la que hicimos scroll
-      lastScrollLine = currentLine;
-    }
-  } else {
-    // Método de respaldo para mantener el cursor visible en la pantalla
-    const cursorRect = cursorElement.getBoundingClientRect();
-    const textBoxRect = textBox.getBoundingClientRect();
-    
-    // Margen de seguridad (60px desde arriba, 40px desde abajo)
-    const topMargin = 60;
-    const bottomMargin = 40;
-    
-    // Si el cursor está cerca del borde inferior
-    if (cursorRect.bottom > (textBoxRect.bottom - bottomMargin)) {
-      // Calcular cuánto necesitamos desplazar
-      const offset = cursorRect.bottom - textBoxRect.bottom + bottomMargin;
-      textBox.scrollBy({
-        top: offset,
-        behavior: 'smooth'
-      });
-    }
-    // Si el cursor está cerca del borde superior
-    else if (cursorRect.top < (textBoxRect.top + topMargin)) {
-      const offset = textBoxRect.top + topMargin - cursorRect.top;
-      textBox.scrollBy({
-        top: -offset,
-        behavior: 'smooth'
-      });
-    }
+  // Calcular la altura de la línea actual (aproximadamente)
+  const firstChar = document.querySelector('.char');
+  const lineHeight = firstChar ? firstChar.offsetHeight : 40; // Altura aproximada de 40px por línea
+  
+  // Calcular la posición relativa del cursor dentro del textBox
+  const cursorTopRelative = cursorRect.top - textBoxRect.top;
+  const cursorBottomRelative = cursorRect.bottom - textBoxRect.top;
+  
+  // FORZAR: La línea actual debe ser la PRIMERA línea visible
+  // Esto significa que el cursor debe estar cerca de la parte superior
+  const desiredTopPosition = 20; // 20px desde la parte superior del text-box
+  
+  // Calcular cuánto necesitamos desplazar para que el cursor esté en la posición deseada
+  const scrollOffset = cursorTopRelative - desiredTopPosition;
+  
+  // Solo hacer scroll si el cursor no está en la posición deseada
+  if (Math.abs(scrollOffset) > lineHeight / 2) {
+    // Aplicar scroll suave pero preciso
+    textBox.scrollBy({
+      top: scrollOffset,
+      behavior: 'smooth'
+    });
   }
   
-  // También desplazar la ventana si es necesario (para dispositivos muy pequeños)
-  if (window.innerHeight < 600) {
-    const cursorRect = cursorElement.getBoundingClientRect();
-    const cursorPosition = cursorRect.top;
-    const windowHeight = window.innerHeight;
-    
-    // Si el cursor está en la mitad inferior de la pantalla
-    if (cursorPosition > windowHeight * 0.6) {
-      const scrollAmount = cursorPosition - (windowHeight * 0.3);
-      window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
-    }
+  // Método de respaldo: Verificar también si el cursor está fuera de la vista
+  const cursorVisibleTop = cursorTopRelative >= 0;
+  const cursorVisibleBottom = cursorBottomRelative <= textBox.clientHeight;
+  
+  if (!cursorVisibleTop) {
+    // El cursor está por encima del área visible - hacer scroll hacia arriba
+    textBox.scrollBy({
+      top: cursorTopRelative - 30, // 30px de margen
+      behavior: 'smooth'
+    });
+  } else if (!cursorVisibleBottom) {
+    // El cursor está por debajo del área visible - hacer scroll hacia abajo
+    textBox.scrollBy({
+      top: cursorBottomRelative - textBox.clientHeight + 30, // 30px de margen
+      behavior: 'smooth'
+    });
   }
+}
+
+// Función para forzar el scroll al cursor (sin animación suave)
+function forceScrollToCursor() {
+  if (!isMobile || !isTestActive) return;
+  
+  const cursorElement = document.querySelector('.cursor');
+  if (!cursorElement) return;
+  
+  const textBox = document.querySelector('.text-box');
+  if (!textBox) return;
+  
+  // Obtener posición del cursor
+  const cursorRect = cursorElement.getBoundingClientRect();
+  const textBoxRect = textBox.getBoundingClientRect();
+  
+  // Calcular posición relativa
+  const cursorTopRelative = cursorRect.top - textBoxRect.top;
+  
+  // Desplazar para que el cursor esté en la parte superior
+  textBox.scrollTop += cursorTopRelative - 20; // 20px de margen superior
+  
+  // Forzar reflow
+  void textBox.offsetHeight;
 }
 
 // Configurar input de teclado para móviles
@@ -277,12 +287,25 @@ function setupMobileKeyboardInput() {
           mobileInput.focus();
           mobileInput.value = '';
           keyboardActive = true;
+          console.log('Teclado activado (inicio test)');
         }
       }, 100);
     } else if (isTestActive && !keyboardActive) {
-      mobileInput.focus();
-      mobileInput.value = '';
-      keyboardActive = true;
+      // Test activo pero teclado no activo - activarlo
+      setTimeout(() => {
+        mobileInput.focus();
+        mobileInput.value = '';
+        keyboardActive = true;
+        console.log('Teclado activado (tap en texto)');
+      }, 100);
+    } else if (isTestActive && keyboardActive) {
+      // Test activo y teclado ya estaba activo - mantener el foco
+      setTimeout(() => {
+        if (document.activeElement !== mobileInput) {
+          mobileInput.focus();
+          console.log('Teclado reactivado (mantener foco)');
+        }
+      }, 100);
     }
     e.preventDefault();
   });
@@ -293,24 +316,11 @@ function setupMobileKeyboardInput() {
   // Manejar keydown para backspace y espacio
   mobileInput.addEventListener('keydown', handleMobileKeyDown);
   
-  // Cuando se pierde el foco, mantener el valor pero marcar como inactivo
+  // Cuando se pierde el foco, marcar como inactivo pero NO limpiar valor
   mobileInput.addEventListener('blur', function() {
     keyboardActive = false;
-    // NO limpiar el valor para evitar que el teclado se vuelva a abrir
-    // this.value = '';
-  });
-
-  // Evitar que el teclado se abra al hacer tap en otras partes de la pantalla
-  document.addEventListener('touchstart', function(e) {
-    if (isTestActive && isMobile) {
-      // Solo permitir que el teclado se abra al tocar el área de texto
-      if (!e.target.closest('#text-input') && !e.target.closest('#mobile-text-input')) {
-        if (mobileInput === document.activeElement) {
-          mobileInput.blur();
-          keyboardActive = false;
-        }
-      }
-    }
+    console.log('Teclado desactivado (blur)');
+    // NO limpiar el valor aquí para evitar que el teclado se abra automáticamente
   });
 
   // También enfocar cuando se haga clic normalmente
@@ -320,7 +330,66 @@ function setupMobileKeyboardInput() {
         mobileInput.focus();
         mobileInput.value = '';
         keyboardActive = true;
+        console.log('Teclado activado (click)');
       }, 100);
+    } else if (isTestActive && isMobile && keyboardActive) {
+      // Si ya está activo, mantener el foco
+      setTimeout(() => {
+        if (document.activeElement !== mobileInput) {
+          mobileInput.focus();
+          console.log('Teclado mantenido activo (click)');
+        }
+      }, 100);
+    }
+  });
+
+  // NUEVA FUNCIONALIDAD: Detectar cuando el teclado se oculta y permitir reactivarlo
+  setupKeyboardVisibilityDetection(mobileInput);
+}
+
+// NUEVA FUNCIÓN: Detectar cambios en la visibilidad del teclado
+function setupKeyboardVisibilityDetection(mobileInput) {
+  if (!isMobile) return;
+  
+  let lastWindowHeight = window.innerHeight;
+  let keyboardWasVisible = false;
+  
+  // Detectar cambios en el tamaño de la ventana (indica teclado apareciendo/desapareciendo)
+  window.addEventListener('resize', function() {
+    const currentHeight = window.innerHeight;
+    
+    // Si la altura disminuyó, el teclado probablemente apareció
+    if (currentHeight < lastWindowHeight) {
+      keyboardWasVisible = true;
+      console.log('Teclado probablemente visible');
+      
+      // Hacer scroll para ajustar la vista
+      if (isTestActive) {
+        setTimeout(() => {
+          forceScrollToCursor();
+        }, 300);
+      }
+    }
+    // Si la altura aumentó, el teclado probablemente desapareció
+    else if (currentHeight > lastWindowHeight && keyboardWasVisible) {
+      keyboardWasVisible = false;
+      console.log('Teclado probablemente oculto');
+      
+      // No hacemos nada aquí - el usuario deberá tocar para reactivar
+    }
+    
+    lastWindowHeight = currentHeight;
+  });
+  
+  // Detectar cuando el usuario toque fuera del área de texto (podría ocultar teclado)
+  document.addEventListener('touchstart', function(e) {
+    // Si el test está activo y el usuario toca fuera del área de texto
+    if (isTestActive && !e.target.closest('#text-input') && !e.target.closest('.btn-restart')) {
+      // Si el teclado está activo pero el usuario toca fuera, podría estar intentando ocultarlo
+      if (mobileInput === document.activeElement) {
+        console.log('Usuario tocó fuera del área de texto - teclado podría ocultarse');
+        // No hacemos blur aquí - dejamos que el sistema maneje esto
+      }
     }
   });
 }
@@ -381,9 +450,12 @@ function processCharacter(typedChar) {
 
       updateCursor();
       
-      // Desplazar al cursor (especialmente importante en móviles)
+      // Llamar a scrollToCursor inmediatamente después de actualizar
       if (isMobile) {
-        setTimeout(scrollToCursor, 10);
+        // Usar un delay muy pequeño para asegurar que el DOM se actualizó
+        setTimeout(() => {
+          scrollToCursor();
+        }, 50);
       }
       
       updateStats();
@@ -428,9 +500,12 @@ function processCharacter(typedChar) {
   // Actualizar cursor
   updateCursor();
   
-  // Desplazar al cursor (especialmente importante en móviles)
+  // Llamar a scrollToCursor inmediatamente
   if (isMobile) {
-    setTimeout(scrollToCursor, 10);
+    // Pequeño delay para asegurar que el cursor se movió
+    setTimeout(() => {
+      scrollToCursor();
+    }, 50);
   }
 
   // Actualizar estadísticas
@@ -659,7 +734,9 @@ function updateCursor() {
     // Desplazar al cursor en móviles
     if (isMobile && isTestActive) {
       // Usar setTimeout para asegurar que el DOM se haya actualizado
-      setTimeout(scrollToCursor, 10);
+      setTimeout(() => {
+        scrollToCursor();
+      }, 10);
     }
   }
 }
@@ -711,6 +788,7 @@ function startTest() {
       setTimeout(() => {
         mobileInput.focus();
         mobileInput.value = '';
+        console.log('Teclado activado al inicio del test');
       }, 100);
     }
   }
@@ -809,6 +887,16 @@ function setupEventListeners() {
     if (isMobile) e.preventDefault();
     if (!isTestActive && !isTestComplete) {
       startTest();
+    } else if (isTestActive && isMobile) {
+      // NUEVO: Si el test está activo y es móvil, reactivar el teclado si está oculto
+      const mobileInput = document.getElementById('mobile-text-input');
+      if (mobileInput && document.activeElement !== mobileInput) {
+        setTimeout(() => {
+          mobileInput.focus();
+          mobileInput.value = '';
+          console.log('Teclado reactivado al tocar texto');
+        }, 100);
+      }
     }
   });
 
@@ -823,7 +911,7 @@ function setupEventListeners() {
       if (window.innerHeight < lastHeight && isTestActive) {
         // Teclado probablemente se abrió - esperar un momento y luego hacer scroll
         setTimeout(() => {
-          scrollToCursor();
+          forceScrollToCursor();
         }, 300);
       }
       lastHeight = window.innerHeight;
@@ -832,9 +920,13 @@ function setupEventListeners() {
     // Prevenir que el teclado se abra al tocar otras áreas
     document.addEventListener('touchstart', function(e) {
       if (isTestActive && !e.target.closest('#text-input')) {
-        const mobileInput = document.getElementById('mobile-text-input');
-        if (mobileInput && mobileInput === document.activeElement) {
-          mobileInput.blur();
+        // Permitir que el botón de reinicio no active el teclado
+        if (!e.target.closest('.btn-restart')) {
+          const mobileInput = document.getElementById('mobile-text-input');
+          if (mobileInput && mobileInput === document.activeElement) {
+            mobileInput.blur();
+            console.log('Teclado desactivado al tocar fuera');
+          }
         }
       }
     }, true);
@@ -859,6 +951,7 @@ function endTest() {
       mobileInput.blur();
       // Limpiar valor solo al finalizar
       mobileInput.value = '';
+      console.log('Teclado desactivado al finalizar test');
     }
   }
 
@@ -973,6 +1066,7 @@ function restartTest() {
     if (mobileInput) {
       mobileInput.blur();
       mobileInput.value = '';
+      console.log('Teclado desactivado al reiniciar test');
     }
   }
 
