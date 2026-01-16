@@ -30,7 +30,7 @@ const incorrectEl = document.getElementById("Incorrect");
 const pbScoreEl = document.getElementById("pb-score");
 const mainContent = document.querySelector(".main-content");
 const testCompleteSection = document.querySelector(".test-complete");
-const messageTitle = document.getElementById("h1");
+const messageTitle = document.getElementById("logro");
 const messageText = document.getElementById("text");
 const logo = document.getElementById("logo");
 const mainElement = document.querySelector(".main");
@@ -62,7 +62,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Configurar funcionalidad móvil
   setupMobileFunctionality();
+
+  // Configurar valores por defecto en pantalla
+  setDefaultDisplayValues();
 });
+
+// Valores por defecto en pantalla
+function setDefaultDisplayValues() {
+  // Valores por defecto en la sección principal
+  wpmEl.textContent = "0";
+  accuracyEl.textContent = "100%";
+  timeEl.textContent = "0:30"; // Modo por defecto: Timed (30s)
+  
+  // Valores por defecto en el dropdown de dificultad
+  const difficultyBtnText = difficultyMobileBtn.querySelector(".btn-text");
+  difficultyBtnText.textContent = currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1);
+  
+  // Valores por defecto en el dropdown de modo
+  const modeBtnText = modeMobileBtn.querySelector(".btn-text");
+  modeBtnText.textContent = currentMode;  
+}
 
 // Configurar funcionalidad móvil
 function setupMobileFunctionality() {
@@ -112,7 +131,6 @@ function setupMobileKeyboardInput() {
   mobileInput.style.width = '0';
   mobileInput.style.pointerEvents = 'none';
   mobileInput.style.userSelect = 'none';
-  mobileInput.setAttribute('aria-hidden', 'true');
   document.body.appendChild(mobileInput);
 
   // Cuando se toque el área de texto en móvil, enfocar el textarea
@@ -479,8 +497,9 @@ function updateTimeDisplay(time) {
     // Modo Passage - tiempo transcurrido
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
-    timeEl.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    timeEl.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;    
   }
+  timeEl.style.color = "var(--yellow-400)";
 }
 
 // Inicio del test
@@ -714,6 +733,7 @@ function updateStats() {
   const totalTyped = correctCount + incorrectCount;
   const accuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 0;
   accuracyEl.textContent = `${accuracy}%`;
+  accuracyEl.style.color = "var(--red-500)";
 }
 
 // Reiniciar test
