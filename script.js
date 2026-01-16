@@ -58,19 +58,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// SOLUCIÓN DEFINITIVA PARA TECLADO MÓVIL
+//  TECLADO MÓVIL VISIBLE
 function setupMobileKeyboard() {
   console.log('Configurando teclado para móvil...');
   
-  // 1. Crear un INPUT REAL visible
+  // INPUT REAL visible
   const mobileInput = document.createElement('input');
   mobileInput.type = 'text';
   mobileInput.id = 'mobile-keyboard-input';
   mobileInput.style.position = 'fixed';
-  mobileInput.style.top = '10px';
-  mobileInput.style.left = '10px';
-  mobileInput.style.width = '60px';
-  mobileInput.style.height = '40px';
+  mobileInput.style.top = '16px';
+  mobileInput.style.left = '80px';
+  mobileInput.style.width = '40px';
+  mobileInput.style.height = '30px';
   mobileInput.style.opacity = '0.3';
   mobileInput.style.fontSize = '16px';
   mobileInput.style.zIndex = '9999';
@@ -88,7 +88,7 @@ function setupMobileKeyboard() {
   
   document.body.appendChild(mobileInput);
   
-  // 2. Botón flotante para activar teclado
+  // Botón flotante para activar teclado
   const keyboardButton = document.createElement('button');
   keyboardButton.id = 'keyboard-activator';
   keyboardButton.innerHTML = '⌨️';
@@ -109,7 +109,7 @@ function setupMobileKeyboard() {
   
   document.body.appendChild(keyboardButton);
   
-  // 3. Función para mostrar y enfocar el teclado
+  // Función para mostrar y enfocar el teclado
   function showAndFocusKeyboard() {
     console.log('Activando teclado...');
     
@@ -136,14 +136,14 @@ function setupMobileKeyboard() {
     mobileInput.style.opacity = '0.8';
   }
   
-  // 4. Función para ocultar teclado
+  // Función para ocultar teclado
   function hideKeyboard() {
     mobileInput.style.display = 'none';
     mobileInput.blur();
     mobileInput.value = '';
   }
   
-  // 5. Capturar lo que escribe el usuario
+  // Capturar lo que escribe el usuario
   mobileInput.addEventListener('input', function(e) {
     if (!isTestActive || isTestComplete) return;
     
@@ -165,7 +165,7 @@ function setupMobileKeyboard() {
     }, 10);
   });
   
-  // 6. Manejar teclas especiales
+  // Manejar teclas especiales
   mobileInput.addEventListener('keydown', function(e) {
     if (!isTestActive || isTestComplete) return;
     
@@ -185,7 +185,7 @@ function setupMobileKeyboard() {
     }
   });
   
-  // 7. Cuando el teclado pierde el foco, mostrar botón flotante
+  // Cuando el teclado pierde el foco, mostrar botón flotante
   mobileInput.addEventListener('blur', function() {
     console.log('Teclado perdió foco');
     if (isTestActive && !isTestComplete) {
@@ -199,21 +199,21 @@ function setupMobileKeyboard() {
     }
   });
   
-  // 8. Cuando el teclado gana foco, ocultar botón flotante
+  // Cuando el teclado gana foco, ocultar botón flotante
   mobileInput.addEventListener('focus', function() {
     console.log('Teclado ganó foco');
     keyboardButton.style.display = 'none';
     mobileInput.style.opacity = '0.8';
   });
   
-  // 9. Botón flotante para activar teclado
+  // Botón flotante para activar teclado
   keyboardButton.addEventListener('click', function(e) {
     e.preventDefault();
     e.stopPropagation();
     showAndFocusKeyboard();
   });
   
-  // 10. Cuando se toca el área de texto
+  // Cuando se toca el área de texto
   textInputEl.addEventListener('touchstart', function(e) {
     if (isTestActive) {
       e.preventDefault();
@@ -228,11 +228,11 @@ function setupMobileKeyboard() {
     }
   });
   
-  // 11. Mostrar/ocultar elementos según el estado del test
+  // Mostrar/ocultar elementos según el estado del test
   function updateKeyboardVisibility() {
     if (isTestActive && !isTestComplete) {
       // Test activo: mostrar botón flotante
-      keyboardButton.style.display = 'block';
+      keyboardButton.style.display = 'none';
     } else {
       // Test no activo: ocultar todo
       keyboardButton.style.display = 'none';
@@ -240,7 +240,7 @@ function setupMobileKeyboard() {
     }
   }
   
-  // 12. Sobrescribir funciones para manejar visibilidad
+  // Sobrescribir funciones para manejar visibilidad
   const originalStartTest = startTest;
   startTest = function() {
     originalStartTest();
