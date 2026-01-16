@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Manejar clic en logo solo en desktop
 function handleLogoClick() {
-  if (!isMobile || logo) {
+  if (!isMobile) {
     if (confirm("¿Quieres reiniciar tu récord personal?")) {
       resetPersonalBest();
     }
@@ -412,29 +412,26 @@ function endTest() {
 
   // Guardamos si es la primera vez ANTES de actualizar la variable
   const isFirstTime = personalBest === 0;
+  const pbIcon = document.getElementById("complete-icon");
+  const mainElement = document.querySelector(".main");
+  const testCompleteSection = document.querySelector(".test-complete");
+
+  // Remover todas las clases de estado
+  mainElement.classList.remove("confetti");
+  testCompleteSection.classList.remove("no-stars");
+  pbIcon.classList.remove("new-pb-icon");
+  pbIcon.classList.add("complete-icon"); 
+  pbIcon.src = "assets/images/icon-completed.svg"; 
 
   if (isFirstTime || finalWPM > personalBest) {
     personalBest = finalWPM;
     localStorage.setItem("typingPB", personalBest.toString());
     updatePersonalBestDisplay();
 
-    const pbIcon = document.getElementById("complete-icon");
-    const mainElement = document.querySelector(".main");
-    const testCompleteSection = document.querySelector(".test-complete");
-
-    // Remover todas las clases de estado
-    testCompleteSection.classList.remove("no-stars");
-
     if (isFirstTime) {
       // Primera vez del test
       messageTitle.textContent = "Baseline Established!";
       messageText.textContent = "You've set the bar. Now the real challenge begins—time to beat it.";
-
-      pbIcon.src = "assets/images/icon-completed.svg";
-      pbIcon.classList.remove("new-pb-icon");
-      pbIcon.classList.add("complete-icon");
-
-      
     } else {
       // Nuevo Récord Personal
       messageTitle.textContent = "High Score Smashed!";
@@ -454,18 +451,8 @@ function endTest() {
     messageTitle.textContent = "Test Complete!";
     messageText.textContent = "Solid run. Keep pushing to beat your high score.";
 
-    const pbIcon = document.getElementById("complete-icon");
-    const testCompleteSection = document.querySelector(".test-complete");
-
-    pbIcon.src = "assets/images/icon-completed.svg";
-    pbIcon.classList.remove("new-pb-icon");
-    pbIcon.classList.add("complete-icon");
-
-    // Mo Mostrar estrellas cuando no hay récord
+    // Mostrar estrellas cuando no hay récord
     testCompleteSection.classList.remove("no-stars");
-    
-
-    
   }
 
   // Cambiar a vista de resultados
