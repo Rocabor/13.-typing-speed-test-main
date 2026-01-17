@@ -43,10 +43,15 @@ const dropdownMode = document.querySelector(".dropdown-mode");
 const difficultyOptions = dropdownDifficulty.querySelectorAll(".select");
 const modeOptions = dropdownMode.querySelectorAll(".select");
 
+// Elementos de botones de tablet/desktop
+const difficultyButtons = document.querySelectorAll(".btn-difficulty");
+const modeButtons = document.querySelectorAll(".btn-mode");
+
 // Inicialización
 document.addEventListener("DOMContentLoaded", () => {
   updatePersonalBestDisplay();
   setupDropdowns();
+  setupDesktopControls(); // Nueva función para controles desktop
   loadTextForDifficulty(currentDifficulty);
   setupEventListeners();
   setupLogoEvents();
@@ -58,7 +63,133 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-//  TECLADO MÓVIL VISIBLE
+// Configurar controles de tablet/desktop
+function setupDesktopControls() {
+  // Configurar botones de dificultad
+  difficultyButtons.forEach(button => {
+    button.addEventListener("click", function() {
+      if (isTestActive) return; // No permitir cambiar durante el test
+      
+      // Remover estado activo de todos los botones
+      difficultyButtons.forEach(btn => {
+        btn.setAttribute("aria-checked", "false");
+        btn.classList.remove("active");
+      });
+      
+      // Establecer estado activo en el botón clickeado
+      this.setAttribute("aria-checked", "true");
+      this.classList.add("active");
+      
+      // Actualizar dificultad
+      const difficulty = this.textContent.toLowerCase();
+      currentDifficulty = difficulty;
+      
+      // Actualizar también el dropdown móvil si está visible
+      updateMobileDropdown("difficulty", difficulty);
+      
+      // Cargar nuevo texto si el test no está activo
+      if (!isTestActive && !isTestComplete) {
+        loadTextForDifficulty(currentDifficulty);
+      }
+    });
+  });
+  
+  // Configurar botones de modo
+  modeButtons.forEach(button => {
+    button.addEventListener("click", function() {
+      if (isTestActive) return; // No permitir cambiar durante el test
+      
+      // Remover estado activo de todos los botones
+      modeButtons.forEach(btn => {
+        btn.setAttribute("aria-checked", "false");
+        btn.classList.remove("active");
+      });
+      
+      // Establecer estado activo en el botón clickeado
+      this.setAttribute("aria-checked", "true");
+      this.classList.add("active");
+      
+      // Actualizar modo
+      const mode = this.textContent;
+      currentMode = mode;
+      
+      // Actualizar también el dropdown móvil si está visible
+      updateMobileDropdown("mode", mode);
+      
+      // Resetear tiempo según el modo seleccionado
+      if (!isTestActive && !isTestComplete) {
+        updateTimeDisplayForMode(mode);
+      }
+    });
+  });
+  
+  // Establecer estado inicial de los botones
+  setInitialDesktopButtonStates();
+}
+
+// Establecer estados iniciales de los botones desktop
+function setInitialDesktopButtonStates() {
+  // Establecer "Easy" como activo
+  difficultyButtons.forEach(btn => {
+    if (btn.textContent.toLowerCase() === currentDifficulty) {
+      btn.setAttribute("aria-checked", "true");
+      btn.classList.add("active");
+    }
+  });
+  
+  // Establecer "Timed (30s)" como activo
+  modeButtons.forEach(btn => {
+    if (btn.textContent === currentMode) {
+      btn.setAttribute("aria-checked", "true");
+      btn.classList.add("active");
+    }
+  });
+}
+
+// Actualizar dropdown móvil cuando se cambia desde desktop
+function updateMobileDropdown(type, value) {
+  if (type === "difficulty") {
+    const difficultyBtnText = difficultyMobileBtn.querySelector(".btn-text");
+    const capitalizedValue = value.charAt(0).toUpperCase() + value.slice(1);
+    difficultyBtnText.textContent = capitalizedValue;
+    
+    // Actualizar también la opción seleccionada en el dropdown
+    difficultyOptions.forEach(option => {
+      option.classList.remove("active");
+      option.setAttribute("aria-selected", "false");
+      if (option.getAttribute("data-value") === capitalizedValue) {
+        option.classList.add("active");
+        option.setAttribute("aria-selected", "true");
+      }
+    });
+  } else if (type === "mode") {
+    const modeBtnText = modeMobileBtn.querySelector(".btn-text");
+    modeBtnText.textContent = value;
+    
+    // Actualizar también la opción seleccionada en el dropdown
+    modeOptions.forEach(option => {
+      option.classList.remove("active");
+      option.setAttribute("aria-selected", "false");
+      if (option.getAttribute("data-value") === value) {
+        option.classList.add("active");
+        option.setAttribute("aria-selected", "true");
+      }
+    });
+  }
+}
+
+// Actualizar display de tiempo según el modo
+function updateTimeDisplayForMode(mode) {
+  if (mode === "Timed (30s)") {
+    timeEl.textContent = "0:30";
+  } else if (mode === "Timed (60s)") {
+    timeEl.textContent = "1:00";
+  } else if (mode === "Passage") {
+    timeEl.textContent = "0:00";
+  }
+}
+
+// TECLADO MÓVIL VISIBLE
 function setupMobileKeyboard() {
   console.log('Configurando teclado para móvil...');
   
@@ -412,6 +543,9 @@ function setupDropdowns() {
         btn.querySelector(".arrow").style.transform = "rotate(0deg)";
 
         if (callback) callback(value);
+        
+        // Actualizar también los botones desktop
+        updateDesktopButtons(value, btn === difficultyMobileBtn ? "difficulty" : "mode");
       });
     });
   };
@@ -429,13 +563,7 @@ function setupDropdowns() {
     currentMode = value;
     // Resetear tiempo según el modo seleccionado
     if (!isTestActive && !isTestComplete) {
-      if (currentMode === "Timed (30s)") {
-        timeEl.textContent = "0:30";
-      } else if (currentMode === "Timed (60s)") {
-        timeEl.textContent = "1:00";
-      } else {
-        timeEl.textContent = "0:00";
-      }
+      updateTimeDisplayForMode(value);
     }
   });
 
@@ -453,6 +581,29 @@ function setupDropdowns() {
       });
     }
   });
+}
+
+// Actualizar botones desktop cuando se cambia desde móvil
+function updateDesktopButtons(value, type) {
+  if (type === "difficulty") {
+    difficultyButtons.forEach(btn => {
+      btn.setAttribute("aria-checked", "false");
+      btn.classList.remove("active");
+      if (btn.textContent.toLowerCase() === value.toLowerCase()) {
+        btn.setAttribute("aria-checked", "true");
+        btn.classList.add("active");
+      }
+    });
+  } else if (type === "mode") {
+    modeButtons.forEach(btn => {
+      btn.setAttribute("aria-checked", "false");
+      btn.classList.remove("active");
+      if (btn.textContent === value) {
+        btn.setAttribute("aria-checked", "true");
+        btn.classList.add("active");
+      }
+    });
+  }
 }
 
 // Cargar archivo data.json
@@ -813,13 +964,7 @@ function restartTest() {
   accuracyEl.textContent = "---%";
 
   // Resetear tiempo según el modo actual
-  if (currentMode === "Timed (30s)") {
-    timeEl.textContent = "0:30";
-  } else if (currentMode === "Timed (60s)") {
-    timeEl.textContent = "1:00";
-  } else {
-    timeEl.textContent = "0:00";
-  }
+  updateTimeDisplayForMode(currentMode);
 
   // Mostrar controles de inicio
   document.querySelector(".test-controls").style.display = "flex";
