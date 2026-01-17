@@ -8,18 +8,45 @@ let currentIndex = 0;
 let correctCount = 0;
 let incorrectCount = 0;
 let currentDifficulty = "easy";
-let currentMode = "Timed (30s)";
+let currentMode = "Timed (60s)";
 let isTestComplete = false;
 let personalBest = localStorage.getItem("typingPB") ? parseInt(localStorage.getItem("typingPB")) : 0;
 let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 let lastTapTime = 0;
 let tapCount = 0;
 
+// Variables para estadísticas por dificultad
+let statsByDifficulty = {
+  easy: {
+    attempts: 0,
+    best: 0,
+    attemptsLocalStorageKey: "typingStatsEasyAttempts",
+    bestLocalStorageKey: "typingStatsEasyBest",
+  },
+  medium: {
+    attempts: 0,
+    best: 0,
+    attemptsLocalStorageKey: "typingStatsMediumAttempts",
+    bestLocalStorageKey: "typingStatsMediumBest",
+  },
+  hard: {
+    attempts: 0,
+    best: 0,
+    attemptsLocalStorageKey: "typingStatsHardAttempts",
+    bestLocalStorageKey: "typingStatsHardBest",
+  },
+};
+
+// Variables para tips
+let currentTips = [];
+let currentRandomTip = null;
+
 // Elementos DOM
 const textInputEl = document.getElementById("text-input");
 const startBtn = document.querySelectorAll("#start-btn, #typing-area");
 const restartBtn = document.getElementById("restart-btn");
-const goAgainBtn = document.getElementById("go-again-btn");
+const goAgainBtn = document.getElementById("result-btn");
+const btnResultText = document.getElementById("btn-result-text");
 const wpmEl = document.getElementById("wpm");
 const accuracyEl = document.getElementById("accuracy");
 const timeEl = document.getElementById("time");
@@ -47,98 +74,358 @@ const modeOptions = dropdownMode.querySelectorAll(".select");
 const difficultyButtons = document.querySelectorAll(".btn-difficulty");
 const modeButtons = document.querySelectorAll(".btn-mode");
 
-// Inicialización
+// =============================================
+// INICIALIZACIÓN
+// =============================================
+
 document.addEventListener("DOMContentLoaded", () => {
   updatePersonalBestDisplay();
+  initializeDifficultyStats();
   setupDropdowns();
-  setupDesktopControls(); // Nueva función para controles desktop
+  setupDesktopControls();
   loadTextForDifficulty(currentDifficulty);
   setupEventListeners();
   setupLogoEvents();
   setDefaultDisplayValues();
-  
+  loadFooterTips();
+
   // Configurar móvil SIEMPRE
   if (isMobile) {
     setupMobileKeyboard();
   }
 });
 
-// Configurar controles de tablet/desktop
+// =============================================
+// FUNCIONES DE ESTADÍSTICAS POR DIFICULTAD
+// =============================================
+
+// Inicializar estadísticas por dificultad
+function initializeDifficultyStats() {
+  // Cargar estadísticas desde localStorage
+  for (const difficulty in statsByDifficulty) {
+    const stats = statsByDifficulty[difficulty];
+
+    // Intentos
+    const savedAttempts = localStorage.getItem(stats.attemptsLocalStorageKey);
+    stats.attempts = savedAttempts ? parseInt(savedAttempts) : 0;
+
+    // Mejor puntuación
+    const savedBest = localStorage.getItem(stats.bestLocalStorageKey);
+    stats.best = savedBest ? parseInt(savedBest) : 0;
+  }
+
+  // Actualizar display
+  updateFooterStats();
+}
+
+// Actualizar estadísticas por dificultad al completar un test
+function updateDifficultyStats(finalWPM) {
+  const difficulty = currentDifficulty;
+  const stats = statsByDifficulty[difficulty];
+
+  // Incrementar intentos
+  stats.attempts++;
+
+  // Actualizar mejor puntuación si es necesario
+  if (finalWPM > stats.best) {
+    stats.best = finalWPM;
+  }
+
+  // Guardar en localStorage
+  localStorage.setItem(stats.attemptsLocalStorageKey, stats.attempts.toString());
+  localStorage.setItem(stats.bestLocalStorageKey, stats.best.toString());
+
+  // Actualizar display del footer
+  updateFooterStats();
+}
+
+// Actualizar estadísticas del footer
+function updateFooterStats() {
+  // Fácil
+  const easyAttemptsEl = document.getElementById("easy-attempts");
+  const easyBestEl = document.getElementById("easy-best");
+  if (easyAttemptsEl) easyAttemptsEl.textContent = statsByDifficulty.easy.attempts;
+  if (easyBestEl) easyBestEl.textContent = statsByDifficulty.easy.best;
+
+  // Medio
+  const mediumAttemptsEl = document.getElementById("medium-attempts");
+  const mediumBestEl = document.getElementById("medium-best");
+  if (mediumAttemptsEl) mediumAttemptsEl.textContent = statsByDifficulty.medium.attempts;
+  if (mediumBestEl) mediumBestEl.textContent = statsByDifficulty.medium.best;
+
+  // Difícil
+  const hardAttemptsEl = document.getElementById("hard-attempts");
+  const hardBestEl = document.getElementById("hard-best");
+  if (hardAttemptsEl) hardAttemptsEl.textContent = statsByDifficulty.hard.attempts;
+  if (hardBestEl) hardBestEl.textContent = statsByDifficulty.hard.best;
+
+  // Resaltar la dificultad actual
+  highlightCurrentDifficulty();
+}
+
+// Resaltar la dificultad actual en el footer
+function highlightCurrentDifficulty() {
+  const easyStats = document.getElementById("easy-stats");
+  const mediumStats = document.getElementById("medium-stats");
+  const hardStats = document.getElementById("hard-stats");
+
+  if (!easyStats || !mediumStats || !hardStats) return;
+
+  // Remover resaltado anterior
+  easyStats.style.borderColor = "#222";
+  easyStats.style.boxShadow = "none";
+  mediumStats.style.borderColor = "#222";
+  mediumStats.style.boxShadow = "none";
+  hardStats.style.borderColor = "#222";
+  hardStats.style.boxShadow = "none";
+
+  // Aplicar resaltado según la dificultad actual
+  if (currentDifficulty === "easy") {
+    easyStats.style.borderColor = "#4ade80";
+    easyStats.style.boxShadow = "0 0 0 1px rgba(74, 222, 128, 0.2)";
+  } else if (currentDifficulty === "medium") {
+    mediumStats.style.borderColor = "#e2b714";
+    mediumStats.style.boxShadow = "0 0 0 1px rgba(226, 183, 20, 0.2)";
+  } else if (currentDifficulty === "hard") {
+    hardStats.style.borderColor = "#f87171";
+    hardStats.style.boxShadow = "0 0 0 1px rgba(248, 113, 113, 0.2)";
+  }
+}
+
+// =============================================
+// FUNCIONES DE TIPS DINÁMICOS / FOOTER
+// =============================================
+
+// Cargar y mostrar tips del footer
+async function loadFooterTips() {
+  try {
+    const response = await fetch("tips.json");
+    const data = await response.json();
+    currentTips = data.typing_tips;
+
+    // Mostrar versión
+    const footerVersionEl = document.getElementById("footer-version");
+    if (footerVersionEl) {
+      footerVersionEl.textContent = `v${data.metadatos.version} (${new Date(data.metadatos.ultima_actualizacion).getFullYear()})`;
+    }
+
+    // Mostrar un tip aleatorio
+    showRandomTip();
+
+    // Configurar interactividad
+    setupTipInteractivity();
+  } catch (error) {
+    console.error("Error cargando tips:", error);
+    // Mostrar tip por defecto
+    const tipTextEl = document.getElementById("tip-text");
+    if (tipTextEl) {
+      tipTextEl.textContent = '"No te detengas al cometer un error. Mantener el ritmo es más importante para tu WPM que corregir cada letra instantáneamente."';
+    }
+  }
+}
+
+// Mostrar un tip aleatorio
+function showRandomTip() {
+  if (!currentTips || currentTips.length === 0) return;
+
+  const randomIndex = Math.floor(Math.random() * currentTips.length);
+  currentRandomTip = currentTips[randomIndex];
+
+  const tipTextEl = document.getElementById("tip-text");
+  const tipCategoryEl = document.getElementById("tip-category");
+  const tipDifficultyEl = document.getElementById("tip-difficulty");
+  const tipMetaEl = document.getElementById("tip-meta");
+
+  if (tipTextEl) tipTextEl.textContent = `"${currentRandomTip.consejo}"`;
+  if (tipCategoryEl) tipCategoryEl.textContent = `Category: ${formatCategory(currentRandomTip.categoria)}`;
+  if (tipDifficultyEl) tipDifficultyEl.textContent = `Difficulty: ${formatDifficulty(currentRandomTip.dificultad_sugerida)}`;
+
+  // Mostrar metadatos
+  if (tipMetaEl) tipMetaEl.style.display = "flex";
+}
+
+// Formatear categoría
+function formatCategory(category) {
+  const categories = {
+    postura: "Posture",
+    tecnica: "Technique",
+    precision: "Accuracy",
+    avanzado: "Advanced",
+    atajos: "Shortcuts",
+    ritmo: "Rhythm",
+    enfoque: "Focus",
+    salud: "Health",
+  };
+  return categories[category] || category;
+}
+
+// Formatear dificultad
+function formatDifficulty(difficulty) {
+  const difficulties = {
+    todas: "All",
+    facil: "Easy",
+    medio: "Medium",
+    dificil: "Hard",
+  };
+  return difficulties[difficulty] || difficulty;
+}
+
+// Configurar interactividad del tip
+function setupTipInteractivity() {
+  const tipContainer = document.getElementById("tip-container");
+
+  if (!tipContainer) return;
+
+  // Cambiar tip al hacer clic
+  tipContainer.addEventListener("click", () => {
+    // Efecto visual
+    tipContainer.style.opacity = "0.7";
+    tipContainer.style.transform = "scale(0.98)";
+
+    setTimeout(() => {
+      showRandomTip();
+
+      // Restaurar efectos
+      tipContainer.style.opacity = "1";
+      tipContainer.style.transform = "scale(1)";
+    }, 200);
+  });
+
+  // Efectos hover
+  tipContainer.addEventListener("mouseenter", () => {
+    tipContainer.style.background = "rgba(226, 183, 20, 0.08)";
+    tipContainer.style.transform = "translateY(-2px)";
+    tipContainer.style.boxShadow = "0 4px 12px rgba(226, 183, 20, 0.1)";
+  });
+
+  tipContainer.addEventListener("mouseleave", () => {
+    tipContainer.style.background = "rgba(226, 183, 20, 0.05)";
+    tipContainer.style.transform = "translateY(0)";
+    tipContainer.style.boxShadow = "none";
+  });
+}
+
+// Efecto de parpadeo para el año
+const yearElement = document.querySelector(".year");
+let blink = true;
+setInterval(() => {
+  yearElement.style.opacity = blink ? "0.5" : "1";
+  blink = !blink;
+}, 800);
+
+// =============================================
+// FUNCIÓN DE REINICIO DE RÉCORDS
+// =============================================
+
+// Reiniciar TODOS los récords personales
+function resetPersonalBest() {
+  if (
+    confirm(
+      "¿Quieres reiniciar TODOS tus récords personales?\n\nEsto incluye:\n• Tu récord personal principal\n• Todos los intentos por dificultad\n• Tus mejores puntuaciones por dificultad\n\n⚠️ Esta acción no se puede deshacer.",
+    )
+  ) {
+    // 1. Reiniciar récord personal principal
+    localStorage.removeItem("typingPB");
+    personalBest = 0;
+    updatePersonalBestDisplay();
+
+    // 2. Reiniciar estadísticas por dificultad
+    for (const difficulty in statsByDifficulty) {
+      const stats = statsByDifficulty[difficulty];
+      stats.attempts = 0;
+      stats.best = 0;
+      localStorage.removeItem(stats.attemptsLocalStorageKey);
+      localStorage.removeItem(stats.bestLocalStorageKey);
+    }
+
+    // 3. Actualizar el footer
+    updateFooterStats();
+
+    alert("✅ Todos los récords han sido reiniciados.");
+  }
+}
+
+// =============================================
+// CONFIGURACIÓN DE CONTROLES DESKTOP
+// =============================================
+
 function setupDesktopControls() {
   // Configurar botones de dificultad
-  difficultyButtons.forEach(button => {
-    button.addEventListener("click", function() {
+  difficultyButtons.forEach((button) => {
+    button.addEventListener("click", function () {
       if (isTestActive) return; // No permitir cambiar durante el test
-      
+
       // Remover estado activo de todos los botones
-      difficultyButtons.forEach(btn => {
+      difficultyButtons.forEach((btn) => {
         btn.setAttribute("aria-checked", "false");
         btn.classList.remove("active");
       });
-      
+
       // Establecer estado activo en el botón clickeado
       this.setAttribute("aria-checked", "true");
       this.classList.add("active");
-      
+
       // Actualizar dificultad
       const difficulty = this.textContent.toLowerCase();
       currentDifficulty = difficulty;
-      
+
       // Actualizar también el dropdown móvil si está visible
       updateMobileDropdown("difficulty", difficulty);
-      
+
       // Cargar nuevo texto si el test no está activo
       if (!isTestActive && !isTestComplete) {
         loadTextForDifficulty(currentDifficulty);
       }
+
+      // Actualizar resaltado en el footer
+      highlightCurrentDifficulty();
     });
   });
-  
+
   // Configurar botones de modo
-  modeButtons.forEach(button => {
-    button.addEventListener("click", function() {
+  modeButtons.forEach((button) => {
+    button.addEventListener("click", function () {
       if (isTestActive) return; // No permitir cambiar durante el test
-      
+
       // Remover estado activo de todos los botones
-      modeButtons.forEach(btn => {
+      modeButtons.forEach((btn) => {
         btn.setAttribute("aria-checked", "false");
         btn.classList.remove("active");
       });
-      
+
       // Establecer estado activo en el botón clickeado
       this.setAttribute("aria-checked", "true");
       this.classList.add("active");
-      
+
       // Actualizar modo
       const mode = this.textContent;
       currentMode = mode;
-      
+
       // Actualizar también el dropdown móvil si está visible
       updateMobileDropdown("mode", mode);
-      
+
       // Resetear tiempo según el modo seleccionado
       if (!isTestActive && !isTestComplete) {
         updateTimeDisplayForMode(mode);
       }
     });
   });
-  
+
   // Establecer estado inicial de los botones
   setInitialDesktopButtonStates();
 }
 
-// Establecer estados iniciales de los botones desktop
 function setInitialDesktopButtonStates() {
   // Establecer "Easy" como activo
-  difficultyButtons.forEach(btn => {
+  difficultyButtons.forEach((btn) => {
     if (btn.textContent.toLowerCase() === currentDifficulty) {
       btn.setAttribute("aria-checked", "true");
       btn.classList.add("active");
     }
   });
-  
-  // Establecer "Timed (30s)" como activo
-  modeButtons.forEach(btn => {
+
+  // Establecer "Timed (60s)" como activo
+  modeButtons.forEach((btn) => {
     if (btn.textContent === currentMode) {
       btn.setAttribute("aria-checked", "true");
       btn.classList.add("active");
@@ -146,15 +433,14 @@ function setInitialDesktopButtonStates() {
   });
 }
 
-// Actualizar dropdown móvil cuando se cambia desde desktop
 function updateMobileDropdown(type, value) {
   if (type === "difficulty") {
     const difficultyBtnText = difficultyMobileBtn.querySelector(".btn-text");
     const capitalizedValue = value.charAt(0).toUpperCase() + value.slice(1);
     difficultyBtnText.textContent = capitalizedValue;
-    
+
     // Actualizar también la opción seleccionada en el dropdown
-    difficultyOptions.forEach(option => {
+    difficultyOptions.forEach((option) => {
       option.classList.remove("active");
       option.setAttribute("aria-selected", "false");
       if (option.getAttribute("data-value") === capitalizedValue) {
@@ -162,12 +448,15 @@ function updateMobileDropdown(type, value) {
         option.setAttribute("aria-selected", "true");
       }
     });
+
+    // Actualizar resaltado en el footer
+    highlightCurrentDifficulty();
   } else if (type === "mode") {
     const modeBtnText = modeMobileBtn.querySelector(".btn-text");
     modeBtnText.textContent = value;
-    
+
     // Actualizar también la opción seleccionada en el dropdown
-    modeOptions.forEach(option => {
+    modeOptions.forEach((option) => {
       option.classList.remove("active");
       option.setAttribute("aria-selected", "false");
       if (option.getAttribute("data-value") === value) {
@@ -178,7 +467,6 @@ function updateMobileDropdown(type, value) {
   }
 }
 
-// Actualizar display de tiempo según el modo
 function updateTimeDisplayForMode(mode) {
   if (mode === "Timed (30s)") {
     timeEl.textContent = "0:30";
@@ -189,71 +477,74 @@ function updateTimeDisplayForMode(mode) {
   }
 }
 
-// TECLADO MÓVIL VISIBLE
+// =============================================
+// TECLADO MÓVIL
+// =============================================
+
 function setupMobileKeyboard() {
-  console.log('Configurando teclado para móvil...');
-  
+  console.log("Configurando teclado para móvil...");
+
   // INPUT REAL visible
-  const mobileInput = document.createElement('input');
-  mobileInput.type = 'text';
-  mobileInput.id = 'mobile-keyboard-input';
-  mobileInput.style.position = 'fixed';
-  mobileInput.style.top = '16px';
-  mobileInput.style.left = '80px';
-  mobileInput.style.width = '40px';
-  mobileInput.style.height = '30px';
-  mobileInput.style.opacity = '0.3';
-  mobileInput.style.fontSize = '16px';
-  mobileInput.style.zIndex = '9999';
-  mobileInput.style.border = '2px solid #fbbf24';
-  mobileInput.style.borderRadius = '8px';
-  mobileInput.style.textAlign = 'center';
-  mobileInput.style.background = '#1c1917';
-  mobileInput.style.color = '#fbbf24';
-  mobileInput.autocapitalize = 'none';
-  mobileInput.autocomplete = 'off';
-  mobileInput.autocorrect = 'off';
+  const mobileInput = document.createElement("input");
+  mobileInput.type = "text";
+  mobileInput.id = "mobile-keyboard-input";
+  mobileInput.style.position = "fixed";
+  mobileInput.style.top = "16px";
+  mobileInput.style.left = "80px";
+  mobileInput.style.width = "40px";
+  mobileInput.style.height = "30px";
+  mobileInput.style.opacity = "0.3";
+  mobileInput.style.fontSize = "16px";
+  mobileInput.style.zIndex = "9999";
+  mobileInput.style.border = "2px solid #fbbf24";
+  mobileInput.style.borderRadius = "8px";
+  mobileInput.style.textAlign = "center";
+  mobileInput.style.background = "#1c1917";
+  mobileInput.style.color = "#fbbf24";
+  mobileInput.autocapitalize = "none";
+  mobileInput.autocomplete = "off";
+  mobileInput.autocorrect = "off";
   mobileInput.spellcheck = false;
-  mobileInput.placeholder = '...';
-  mobileInput.style.display = 'none';
-  
+  mobileInput.placeholder = "...";
+  mobileInput.style.display = "none";
+
   document.body.appendChild(mobileInput);
-  
+
   // Botón flotante para activar teclado
-  const keyboardButton = document.createElement('button');
-  keyboardButton.id = 'keyboard-activator';
-  keyboardButton.innerHTML = '⌨️';
-  keyboardButton.style.position = 'fixed';
-  keyboardButton.style.bottom = '100px';
-  keyboardButton.style.right = '20px';
-  keyboardButton.style.width = '60px';
-  keyboardButton.style.height = '60px';
-  keyboardButton.style.borderRadius = '50%';
-  keyboardButton.style.background = '#fbbf24';
-  keyboardButton.style.color = '#1c1917';
-  keyboardButton.style.border = 'none';
-  keyboardButton.style.fontSize = '24px';
-  keyboardButton.style.zIndex = '10000';
-  keyboardButton.style.boxShadow = '0 4px 12px rgba(251, 191, 36, 0.5)';
-  keyboardButton.style.display = 'none';
-  keyboardButton.title = 'Activar teclado';
-  
+  const keyboardButton = document.createElement("button");
+  keyboardButton.id = "keyboard-activator";
+  keyboardButton.innerHTML = "⌨️";
+  keyboardButton.style.position = "fixed";
+  keyboardButton.style.bottom = "100px";
+  keyboardButton.style.right = "20px";
+  keyboardButton.style.width = "60px";
+  keyboardButton.style.height = "60px";
+  keyboardButton.style.borderRadius = "50%";
+  keyboardButton.style.background = "#fbbf24";
+  keyboardButton.style.color = "#1c1917";
+  keyboardButton.style.border = "none";
+  keyboardButton.style.fontSize = "24px";
+  keyboardButton.style.zIndex = "10000";
+  keyboardButton.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
+  keyboardButton.style.display = "none";
+  keyboardButton.title = "Activar teclado";
+
   document.body.appendChild(keyboardButton);
-  
+
   // Función para mostrar y enfocar el teclado
   function showAndFocusKeyboard() {
-    console.log('Activando teclado...');
-    
+    console.log("Activando teclado...");
+
     // Mostrar el input móvil
-    mobileInput.style.display = 'block';
-    
+    mobileInput.style.display = "block";
+
     // Enfocar con múltiples métodos
     setTimeout(() => {
       mobileInput.focus();
-      mobileInput.value = '';
+      mobileInput.value = "";
       mobileInput.click();
     }, 10);
-    
+
     setTimeout(() => {
       if (document.activeElement !== mobileInput) {
         mobileInput.focus();
@@ -261,119 +552,123 @@ function setupMobileKeyboard() {
         mobileInput.select();
       }
     }, 100);
-    
+
     // Ocultar botón flotante
-    keyboardButton.style.display = 'none';
-    mobileInput.style.opacity = '0.8';
+    keyboardButton.style.display = "none";
+    mobileInput.style.opacity = "0.8";
   }
-  
+
   // Función para ocultar teclado
   function hideKeyboard() {
-    mobileInput.style.display = 'none';
+    mobileInput.style.display = "none";
     mobileInput.blur();
-    mobileInput.value = '';
+    mobileInput.value = "";
   }
-  
+
   // Capturar lo que escribe el usuario
-  mobileInput.addEventListener('input', function(e) {
+  mobileInput.addEventListener("input", function (e) {
     if (!isTestActive || isTestComplete) return;
-    
+
     const value = mobileInput.value;
     if (!value || value.length === 0) return;
-    
+
     // Tomar el último carácter
     const lastChar = value.charAt(value.length - 1);
-    
+
     // Limpiar el input pero mantenerlo enfocado
-    mobileInput.value = '';
-    
+    mobileInput.value = "";
+
     // Procesar el carácter
     processCharacter(lastChar);
-    
+
     // Mantener el foco
     setTimeout(() => {
       mobileInput.focus();
     }, 10);
   });
-  
+
   // Manejar teclas especiales
-  mobileInput.addEventListener('keydown', function(e) {
+  mobileInput.addEventListener("keydown", function (e) {
     if (!isTestActive || isTestComplete) return;
-    
-    if (e.key === 'Backspace' || e.key === ' ') {
+
+    if (e.key === "Backspace" || e.key === " ") {
       e.preventDefault();
       processCharacter(e.key);
-      mobileInput.value = '';
-      
+      mobileInput.value = "";
+
       // Mantener el foco
       setTimeout(() => {
         mobileInput.focus();
       }, 10);
     }
-    
-    if (e.key === 'Enter') {
+
+    if (e.key === "Enter") {
       e.preventDefault();
     }
   });
-  
+
   // Cuando el teclado pierde el foco, mostrar botón flotante
-  mobileInput.addEventListener('blur', function() {
-    console.log('Teclado perdió foco');
+  mobileInput.addEventListener("blur", function () {
+    console.log("Teclado perdió foco");
     if (isTestActive && !isTestComplete) {
       // Mostrar botón flotante para reactivar
       setTimeout(() => {
         if (document.activeElement !== mobileInput) {
-          keyboardButton.style.display = 'block';
-          mobileInput.style.opacity = '0.3';
+          keyboardButton.style.display = "block";
+          mobileInput.style.opacity = "0.3";
         }
       }, 300);
     }
   });
-  
+
   // Cuando el teclado gana foco, ocultar botón flotante
-  mobileInput.addEventListener('focus', function() {
-    console.log('Teclado ganó foco');
-    keyboardButton.style.display = 'none';
-    mobileInput.style.opacity = '0.8';
+  mobileInput.addEventListener("focus", function () {
+    console.log("Teclado ganó foco");
+    keyboardButton.style.display = "none";
+    mobileInput.style.opacity = "0.8";
   });
-  
+
   // Botón flotante para activar teclado
-  keyboardButton.addEventListener('click', function(e) {
+  keyboardButton.addEventListener("click", function (e) {
     e.preventDefault();
     e.stopPropagation();
     showAndFocusKeyboard();
   });
-  
+
   // Cuando se toca el área de texto
-  textInputEl.addEventListener('touchstart', function(e) {
-    if (isTestActive) {
-      e.preventDefault();
-      showAndFocusKeyboard();
-    }
-  }, { passive: false });
-  
-  textInputEl.addEventListener('click', function(e) {
+  textInputEl.addEventListener(
+    "touchstart",
+    function (e) {
+      if (isTestActive) {
+        e.preventDefault();
+        showAndFocusKeyboard();
+      }
+    },
+    { passive: false },
+  );
+
+  textInputEl.addEventListener("click", function (e) {
     if (isTestActive && isMobile) {
       e.preventDefault();
       showAndFocusKeyboard();
     }
   });
-  
+
   // Mostrar/ocultar elementos según el estado del test
   function updateKeyboardVisibility() {
     if (isTestActive && !isTestComplete) {
       // Test activo: mostrar botón flotante
-      keyboardButton.style.display = 'none';
+      keyboardButton.style.display = "none";
     } else {
       // Test no activo: ocultar todo
-      keyboardButton.style.display = 'none';
+      keyboardButton.style.display = "none";
       hideKeyboard();
     }
   }
-  
+
   // Sobrescribir funciones para manejar visibilidad
   const originalStartTest = startTest;
-  startTest = function() {
+  startTest = function () {
     originalStartTest();
     updateKeyboardVisibility();
     // Enfocar automáticamente al inicio
@@ -381,41 +676,43 @@ function setupMobileKeyboard() {
       showAndFocusKeyboard();
     }, 300);
   };
-  
+
   const originalEndTest = endTest;
-  endTest = function() {
+  endTest = function () {
     originalEndTest();
     updateKeyboardVisibility();
   };
-  
+
   const originalRestartTest = restartTest;
-  restartTest = function() {
+  restartTest = function () {
     originalRestartTest();
     updateKeyboardVisibility();
   };
-  
+
   // Inicializar visibilidad
   updateKeyboardVisibility();
 }
 
-// Valores por defecto en pantalla
+// =============================================
+// FUNCIONES BÁSICAS
+// =============================================
+
 function setDefaultDisplayValues() {
   wpmEl.textContent = "0";
   accuracyEl.textContent = "100%";
-  timeEl.textContent = "0:30";
-  
+  timeEl.textContent = "1:00";
+
   const difficultyBtnText = difficultyMobileBtn.querySelector(".btn-text");
   difficultyBtnText.textContent = currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1);
-  
+
   const modeBtnText = modeMobileBtn.querySelector(".btn-text");
   modeBtnText.textContent = currentMode;
 }
 
-// Configurar eventos
 function setupEventListeners() {
   // Botón de inicio
   startBtn.forEach((btn) => {
-    const eventType = isMobile ? 'touchstart' : 'click';
+    const eventType = isMobile ? "touchstart" : "click";
     btn.addEventListener(eventType, (e) => {
       if (isMobile) e.preventDefault();
       startTest();
@@ -423,13 +720,13 @@ function setupEventListeners() {
   });
 
   // Botón de reinicio
-  restartBtn.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+  restartBtn.addEventListener(isMobile ? "touchstart" : "click", (e) => {
     if (isMobile) e.preventDefault();
     restartTest();
   });
 
   // Botón de "ir de nuevo"
-  goAgainBtn.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+  goAgainBtn.addEventListener(isMobile ? "touchstart" : "click", (e) => {
     if (isMobile) e.preventDefault();
     testCompleteSection.style.display = "none";
     mainContent.style.display = "flex";
@@ -443,7 +740,7 @@ function setupEventListeners() {
   }
 
   // Hacer clic en el texto para iniciar
-  textInputEl.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+  textInputEl.addEventListener(isMobile ? "touchstart" : "click", (e) => {
     if (isMobile) e.preventDefault();
     if (!isTestActive && !isTestComplete) {
       startTest();
@@ -451,53 +748,46 @@ function setupEventListeners() {
   });
 }
 
-// Configurar eventos del logo
 function setupLogoEvents() {
   if (isMobile) {
     // Para móviles: doble tap
-    logo.addEventListener("touchstart", function(e) {
-      const currentTime = new Date().getTime();
-      const tapLength = currentTime - lastTapTime;
-      
-      if (tapLength < 500 && tapLength > 0) {
-        tapCount++;
-        if (tapCount === 2) {
-          e.preventDefault();
-          if (confirm("¿Quieres reiniciar tu récord personal?")) {
-            resetPersonalBest();
+    logo.addEventListener(
+      "touchstart",
+      function (e) {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTapTime;
+
+        if (tapLength < 500 && tapLength > 0) {
+          tapCount++;
+          if (tapCount === 2) {
+            e.preventDefault();
+            resetPersonalBest(); // Usar la función actualizada
+            tapCount = 0;
           }
-          tapCount = 0;
+        } else {
+          tapCount = 1;
         }
-      } else {
-        tapCount = 1;
-      }
-      
-      lastTapTime = currentTime;
-    }, { passive: true });
+
+        lastTapTime = currentTime;
+      },
+      { passive: true },
+    );
   } else {
     // Para desktop: click normal
     logo.addEventListener("click", () => {
-      if (confirm("¿Quieres reiniciar tu récord personal?")) {
-        resetPersonalBest();
-      }
+      resetPersonalBest(); // Usar la función actualizada
     });
   }
 }
 
-// Resetear record personal
-function resetPersonalBest() {
-  localStorage.removeItem("typingPB");
-  personalBest = 0;
-  updatePersonalBestDisplay();
-  alert("Récord personal reiniciado");
-}
-
-// Configurar record personal
 function updatePersonalBestDisplay() {
   pbScoreEl.textContent = `${personalBest} WPM`;
 }
 
-// Configurar dropdowns
+// =============================================
+// DROPDOWNS
+// =============================================
+
 function setupDropdowns() {
   const handleDropdown = (btn, dropdown, options, callback) => {
     btn.addEventListener("click", (e) => {
@@ -522,8 +812,8 @@ function setupDropdowns() {
     });
 
     options.forEach((option) => {
-      const eventType = isMobile ? 'touchstart' : 'click';
-      
+      const eventType = isMobile ? "touchstart" : "click";
+
       option.addEventListener(eventType, (e) => {
         if (isMobile) e.preventDefault();
         e.stopPropagation();
@@ -543,7 +833,7 @@ function setupDropdowns() {
         btn.querySelector(".arrow").style.transform = "rotate(0deg)";
 
         if (callback) callback(value);
-        
+
         // Actualizar también los botones desktop
         updateDesktopButtons(value, btn === difficultyMobileBtn ? "difficulty" : "mode");
       });
@@ -556,6 +846,8 @@ function setupDropdowns() {
     if (!isTestActive && !isTestComplete) {
       loadTextForDifficulty(currentDifficulty);
     }
+    // Actualizar resaltado en el footer
+    highlightCurrentDifficulty();
   });
 
   // Configurar dropdown de modo
@@ -568,9 +860,9 @@ function setupDropdowns() {
   });
 
   // Cerrar dropdowns al hacer clic fuera
-  const closeEvent = isMobile ? 'touchstart' : 'click';
+  const closeEvent = isMobile ? "touchstart" : "click";
   document.addEventListener(closeEvent, (e) => {
-    if (!e.target.closest('.dropdown-group')) {
+    if (!e.target.closest(".dropdown-group")) {
       [difficultyMobileBtn, modeMobileBtn].forEach((btn) => {
         btn.setAttribute("aria-expanded", "false");
         const arrow = btn.querySelector(".arrow");
@@ -583,10 +875,9 @@ function setupDropdowns() {
   });
 }
 
-// Actualizar botones desktop cuando se cambia desde móvil
 function updateDesktopButtons(value, type) {
   if (type === "difficulty") {
-    difficultyButtons.forEach(btn => {
+    difficultyButtons.forEach((btn) => {
       btn.setAttribute("aria-checked", "false");
       btn.classList.remove("active");
       if (btn.textContent.toLowerCase() === value.toLowerCase()) {
@@ -595,7 +886,7 @@ function updateDesktopButtons(value, type) {
       }
     });
   } else if (type === "mode") {
-    modeButtons.forEach(btn => {
+    modeButtons.forEach((btn) => {
       btn.setAttribute("aria-checked", "false");
       btn.classList.remove("active");
       if (btn.textContent === value) {
@@ -606,7 +897,10 @@ function updateDesktopButtons(value, type) {
   }
 }
 
-// Cargar archivo data.json
+// =============================================
+// FUNCIONES DEL TEST
+// =============================================
+
 async function loadTextForDifficulty(difficulty) {
   try {
     const response = await fetch("data.json");
@@ -640,12 +934,12 @@ function displayText() {
     charSpan.textContent = currentText[i];
     charSpan.className = "char";
     charSpan.id = `char-${i}`;
-    
+
     // Añadir espacios no separables para evitar que palabras se corten
-    if (currentText[i] === ' ') {
-      charSpan.style.whiteSpace = 'nowrap';
+    if (currentText[i] === " ") {
+      charSpan.style.whiteSpace = "nowrap";
     }
-    
+
     textInputEl.appendChild(charSpan);
   }
 
@@ -671,7 +965,6 @@ function updateCursor() {
   }
 }
 
-// Actualizar tiempo en pantalla
 function updateTimeDisplay(time) {
   if (currentMode.startsWith("Timed")) {
     // Modo Timed - cuenta regresiva
@@ -687,7 +980,6 @@ function updateTimeDisplay(time) {
   timeEl.style.color = "var(--yellow-400)";
 }
 
-// Inicio del test
 function startTest() {
   if (isTestActive || isTestComplete) return;
 
@@ -728,7 +1020,6 @@ function startTest() {
   updateStats();
 }
 
-// Inicio de contador de tiempo
 function startTimer(timeLimit) {
   if (timerInterval) clearInterval(timerInterval);
 
@@ -766,9 +1057,8 @@ function startTimer(timeLimit) {
   }, 1000);
 }
 
-// Procesar carácter (función común para desktop y móvil)
 function processCharacter(typedChar) {
-  if (typedChar === 'Backspace') {
+  if (typedChar === "Backspace") {
     if (currentIndex > 0) {
       currentIndex--;
 
@@ -840,7 +1130,6 @@ function processCharacter(typedChar) {
   }
 }
 
-// Finalizar test
 function endTest() {
   isTestActive = false;
   isTestComplete = true;
@@ -861,6 +1150,9 @@ function endTest() {
   const totalTyped = correctCount + incorrectCount;
   const finalAccuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 0;
 
+  // Actualizar estadísticas por dificultad
+  updateDifficultyStats(finalWPM);
+
   // Actualizar UI de resultados
   wpmCompleteEl.textContent = finalWPM;
   accuracyCompleteEl.textContent = `${finalAccuracy}%`;
@@ -871,9 +1163,11 @@ function endTest() {
   const isFirstTime = personalBest === 0;
   const pbIcon = document.getElementById("complete-icon");
 
-  // Remover todas las clases de estado
-  mainElement.classList.remove("confetti");
+  // Reset inicial de estados comunes
+  document.body.classList.remove("confetti");
   testCompleteSection.classList.remove("no-stars");
+  goAgainBtn.classList.remove("btn-go-again", "btn-beat-score");
+
   if (pbIcon) {
     pbIcon.classList.remove("new-pb-icon");
     pbIcon.classList.add("complete-icon");
@@ -881,37 +1175,34 @@ function endTest() {
   }
 
   if (isFirstTime || finalWPM > personalBest) {
+    // LÓGICA DE RÉCORD
     personalBest = finalWPM;
     localStorage.setItem("typingPB", personalBest.toString());
     updatePersonalBestDisplay();
 
+    btnResultText.textContent = "Beat this score";
+    goAgainBtn.classList.add("btn-beat-score");
+
     if (isFirstTime) {
-      // Primera vez del test
       messageTitle.textContent = "Baseline Established!";
-      messageText.textContent = "You've set the bar. Now the real challenge begins—time to beat it.";
+      messageText.textContent = "You've set the bar. Now the real challenge begins.";
     } else {
-      // Nuevo Récord Personal
       messageTitle.textContent = "High Score Smashed!";
       messageText.textContent = "You're getting faster. That was incredible typing.";
-
       if (pbIcon) {
         pbIcon.src = "assets/images/icon-new-pb.svg";
-        pbIcon.classList.remove("complete-icon");
-        pbIcon.classList.add("new-pb-icon");
+        pbIcon.classList.replace("complete-icon", "new-pb-icon");
       }
-
-      // Ocultar estrellas para nuevo récord
       testCompleteSection.classList.add("no-stars");
-
-      // Mostrar confetti
-      mainElement.classList.add("confetti");
+      document.body.classList.add("confetti");
     }
   } else {
+    // LÓGICA NORMAL
     messageTitle.textContent = "Test Complete!";
     messageText.textContent = "Solid run. Keep pushing to beat your high score.";
 
-    // Mostrar estrellas cuando no hay récord
-    testCompleteSection.classList.remove("no-stars");
+    btnResultText.textContent = "Go again";
+    goAgainBtn.classList.add("btn-go-again");
   }
 
   // Cambiar a vista de resultados
@@ -919,7 +1210,6 @@ function endTest() {
   testCompleteSection.style.display = "flex";
 }
 
-// Actualizar estadísticas
 function updateStats() {
   if (!startTime) return;
 
@@ -939,10 +1229,9 @@ function updateStats() {
   accuracyEl.style.color = "var(--red-500)";
 }
 
-// Reiniciar test
 function restartTest() {
   // Remover confetti
-  mainElement.classList.remove("confetti");
+  document.body.classList.remove("confetti");
 
   // Detener temporizador
   if (timerInterval) {
@@ -979,7 +1268,6 @@ function restartTest() {
   textInputEl.style.filter = "blur(16px)";
 }
 
-// Manejar teclado (solo para desktop)
 function handleKeyDown(e) {
   if (!isTestActive || isTestComplete) return;
 
@@ -1002,7 +1290,6 @@ function handleKeyDown(e) {
   }
 }
 
-// Manejar teclado (solo para desktop)
 function handleKeyUp(e) {
   if (!isTestActive || isTestComplete) return;
 

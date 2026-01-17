@@ -141,7 +141,6 @@ body {
 .dropdown-difficulty,
 .dropdown-mode {
   display: none;
-  /* display: flex; */
   flex-direction: column;
   padding-block: 10px;
   gap: 8px;
@@ -186,21 +185,19 @@ body {
   background-color: var(--neutral-900);
 }
 
-
 /*  NO MOSTRAR MENU DE DIFICULTAD MODO TABLET / DESKTOP */
 .difficulty-cont,
-  .mode-cont {
-    display: none;
-    /* display: flex; */
-    align-items: center;
-    gap: 6px;
-  }
+.mode-cont {
+  display: none;
+  /* display: flex; */
+  align-items: center;
+  gap: 6px;
+}
 
 /* MAIN CONTENT > TEXT CONTAINER // HOME - NOT STARTED */
 
 .text-row {
   width: 100%;
-  /* min-height: 560px; */
   min-height: auto;
   display: flex;
   flex-direction: column;
@@ -254,7 +251,6 @@ body {
   width: 100%;
   height: 80px;
   display: none;
-  /* display: flex; */
   justify-content: center;
   align-items: end;
   border-top: 1px solid var(--neutral-700);
@@ -282,11 +278,9 @@ body {
   width: 343px;
   height: 609px;
   display: none;
-  /* display: flex; */
   flex-direction: column;
   align-items: center;
   gap: 24px;
-  padding-block: 16px 0;
   position: relative;
 }
 
@@ -322,28 +316,30 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  box-shadow: 0 0 0 10px #22492f, 0 0 0 20px #18251c;
+  box-shadow:
+    0 0 0 10px #22492f,
+    0 0 0 20px #18251c;
 }
 
 .new-pb-icon {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
 }
 
-.main::after {
+body::after {
   content: "";
   background-image: url("assets/images/pattern-confetti.svg");
-  background-size: cover;
+  background-size: contain;
   position: absolute;
   bottom: 0;
   width: 100%;
-  height: 160px;
+  height: 10rem;
   pointer-events: none;
   z-index: -1;
   display: none;
 }
 
-.main.confetti::after {
+body.confetti::after {
   display: block;
 }
 
@@ -412,7 +408,7 @@ strong {
   color: var(--green-500);
 }
 
-.btn-go-again {
+.btn-beat-score {
   width: 216px;
   height: 56px;
   border-radius: 12px;
@@ -429,6 +425,24 @@ strong {
   gap: 10px;
 }
 
+.btn-go-again {
+  width: 155px;
+  height: 56px;
+  border-radius: 12px;
+  border: none;
+  color: var(--neutral-900);
+  font-size: 20px;
+  font-family: "Sora", sans-serif;
+  line-height: 120%;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-beat-score img,
 .btn-go-again img {
   filter: brightness(0) saturate(100%);
 }
@@ -512,10 +526,8 @@ strong {
     width: 704px;
     height: 496px;
     gap: 32px;
-    padding-block: 24px 0;
     margin-top: 40px;
-    /* position: relative; */
-  }  
+  }
 
   .stats-row-complete {
     flex-direction: row;
@@ -548,7 +560,9 @@ strong {
   .complete-icon {
     width: 64px;
     height: 64px;
-    box-shadow: 0 0 0 18px #22492f, 0 0 0 36px #18251c;
+    box-shadow:
+      0 0 0 18px #22492f,
+      0 0 0 36px #18251c;
   }
 
   .message-cont {
@@ -562,7 +576,7 @@ strong {
     letter-spacing: 0.4px;
   }
 
-    .message {
+  .message {
     font-size: 20px;
     line-height: 120%;
     letter-spacing: -0.6px;
@@ -601,7 +615,6 @@ strong {
   /* MENU DE DIFICULTAD MODO TABLET / DESKTOP */
 
   .setting-cont-movil {
-    /* display: flex; */
     display: none;
   }
 
@@ -612,7 +625,6 @@ strong {
 
   .difficulty-cont,
   .mode-cont {
-    /* display: none; */
     display: flex;
     align-items: center;
     gap: 6px;
@@ -647,9 +659,38 @@ strong {
   }
 
   .text-row {
-    padding-block: 32px 40px;    
+    padding-block: 32px 40px;
   }
 
+  /* Estilos para botones activos en desktop */
+  .btn-difficulty.active,
+  .btn-mode.active {
+    border-color: var(--blue-400);
+    color: var(--blue-400);
+  }
+  .btn-difficulty:hover,
+  .btn-mode:hover {
+    border-color: var(--blue-400);
+    color: var(--blue-400);
+    cursor: pointer;
+  }
+
+  .btn-start:hover {
+    background-color: var(--blue-400);
+    cursor: pointer;
+  }
+  .btn-start:hover,
+  .btn-restart:hover,
+  .btn-result:hover,
+  .btn-go-again:hover {
+    cursor: pointer;
+  }
+
+  /* Asegurar que los botones tengan transición suave */
+  .btn-difficulty,
+  .btn-mode {
+    transition: all 0.3s ease;
+  }
 }
 
 /* DISPLAY DESKTOP */
@@ -672,21 +713,16 @@ strong {
     padding-block: 0 16px;
   }
 
-  .text-container,
-  .text-row {
-    /* width: 100%; */
-    /* min-height: 540px; */
-  }
-
   /* RESULTS */
 
   .test-complete {
     width: 1216px;
+    height: 464px;
     margin-top: 0;
   }
 
   .message-cont {
-    padding-block: 24px 0;
+    padding-block: 0px 0;
   }
 
   .stats-row-complete {
@@ -706,24 +742,23 @@ strong {
     left: calc(100% - 74px);
     top: 380px;
   }
-
-  /* Estilos para botones activos en desktop */
-.btn-difficulty.active,
-.btn-mode.active {
-  background-color: var(--yellow-400) !important;
-  color: var(--stone-950) !important;
 }
 
-.btn-difficulty:hover:not(.active),
-.btn-mode:hover:not(.active) {
-  background-color: var(--stone-700);
+/* SECCION FOOTER */
+
+.attribution-list {
+  display: flex;
+  margin-block-start: 0.625rem;
+  font-size: clamp(0.68rem, 0.75vw + 0.5rem, 0.88rem);
+  color: var(--neutral-400);
+  list-style: none;
+  gap: 1.25rem;
+}
+.attribution-list li::before {
+  margin-left: -2.5rem;
 }
 
-/* Asegurar que los botones tengan transición suave */
-.btn-difficulty,
-.btn-mode {
-  transition: all 0.2s ease;
+.attribution-list a {
+  color: var(--blue-400);
+  text-decoration: none;
 }
-}
-
-

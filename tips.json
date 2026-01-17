@@ -1,0 +1,56 @@
+{
+  "typing_tips": [
+    {
+      "id": 1,
+      "categoria": "postura",
+      "dificultad_sugerida": "todas",
+      "consejo": "Keep your wrists slightly elevated; resting them on the desk can cause fatigue and reduce speed."
+    },
+    {
+      "id": 2,
+      "categoria": "tecnica",
+      "dificultad_sugerida": "facil",
+      "consejo": "Always position your fingers on the 'home row' (ASDF - JKL;). This is the key to muscle memory."
+    },
+    {
+      "id": 3,
+      "categoria": "precision",
+      "dificultad_sugerida": "todas",
+      "consejo": "Accuracy comes first. If you maintain 98% accuracy, speed will come naturally."
+    },
+    {
+      "id": 4,
+      "categoria": "avanzado",
+      "dificultad_sugerida": "dificil",
+      "consejo": "Try to read one or two words ahead of what you're typing to eliminate pauses between words."
+    },
+    {
+      "id": 5,
+      "categoria": "atajos",
+      "dificultad_sugerida": "medio",
+      "consejo": "Use Ctrl + Backspace (or Cmd + Backspace on Mac) to delete entire words quickly instead of letter by letter."
+    },
+    {
+      "id": 6,
+      "categoria": "ritmo",
+      "dificultad_sugerida": "medio",
+      "consejo": "Type with a steady rhythm. It's better to go a bit slower but smoothly than to have fast bursts followed by errors."
+    },
+    {
+      "id": 7,
+      "categoria": "enfoque",
+      "dificultad_sugerida": "dificil",
+      "consejo": "In texts with punctuation and capital letters, don't stop when you miss a comma; recover your rhythm with the next word."
+    },
+    {
+      "id": 8,
+      "categoria": "salud",
+      "dificultad_sugerida": "todas",
+      "consejo": "If your hands feel tense, take a 30-second break. Relaxation improves reflexes by 15%."
+    }
+  ],
+  "metadatos": {
+    "ultima_actualizacion": "2026-01-17",
+    "version": "January 2026"
+  }
+}
