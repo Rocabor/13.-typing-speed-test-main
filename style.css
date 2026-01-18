@@ -785,9 +785,9 @@ strong {
     letter-spacing: 2px;
 }
 
-.label-easy { color: #4ade80; }
-.label-medium { color: #e2b714; }
-.label-hard { color: #f87171; }
+.label-easy { color: var(--green-500); }
+.label-medium { color: var(--yellow-400); }
+.label-hard { color: var(--red-500); }
 
 .stat-content {
     margin-top: 10px;
@@ -801,8 +801,8 @@ strong {
     margin-top: 5px;
 }
 
-.value-try { color: #d1d0c5; }
-.value-best { color: #e2b714; }
+.value-try { color: var(--neutral-0); }
+.value-best { color: var(--yellow-400); }
 
 /* Sección de Tips y Navegación */
 .footer-info {
@@ -816,7 +816,7 @@ strong {
     background: rgba(226, 183, 20, 0.05);
     padding: 15px 25px;
     border-radius: 4px;
-    border-left: 3px solid #e2b714;
+    border-left: 3px solid var(--yellow-400);
     max-width: 600px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -827,21 +827,21 @@ strong {
 }
 
 .tip-label {
-    color: #e2b714;
+    color:var(--yellow-400);
     font-size: 0.8rem;
 }
 
 #tip-text {
     margin: 5px 0 0;
     font-size: 1rem;
-    color: #9da0a2;
+    color: var(--neutral-400);
     line-height: 1.4;
 }
 
 #tip-meta {
     margin-top: 10px;
     font-size: 0.7rem;
-    color: #646669;
+    color: var(--neutral-400);
     display: none;
     justify-content: space-between;
 }
