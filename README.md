@@ -23,7 +23,11 @@ Frontend Mentor challenges help you improve your coding skills by building reali
 ## Overview
 
 
-### 🏋️‍♂️The challenge
+### 🏋️‍♂️The challenge 
+![Static Badge](https://img.shields.io/badge/JUNIOR-%23ffffff?style=for-the-badge&label=2&labelColor=%2334D399)
+![Static Badge](https://img.shields.io/badge/html5-%23E34F26?style=for-the-badge&logo=html5&logoColor=%23ffffff)
+![Static Badge](https://img.shields.io/badge/css-%23663399?style=for-the-badge&logo=css)
+![Static Badge](https://img.shields.io/badge/javascript-%23F7DF1E?style=for-the-badge&logo=javascript&logoColor=%23000)
 
 Your challenge is to build out this typing speed test app and get it looking as close to the design as possible.
 
